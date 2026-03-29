@@ -1,0 +1,10 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root { --background: 0 0% 100%; --foreground: 0 0% 3.9%; }
+  .dark { --background: 0 0% 3.9%; --foreground: 0 0% 98%; }
+  * { @apply border-neutral-800; }
+  body { @apply bg-neutral-950 text-neutral-100 antialiased; }
+}
