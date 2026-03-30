@@ -8,7 +8,6 @@ import EatingWindowBar from '@/components/chrono/EatingWindowBar'
 import DayTimeline from '@/components/chrono/DayTimeline'
 import MealLogger from '@/components/meals/MealLogger'
 import MacroRing from '@/components/meals/MacroRing'
-import ChronoScore from '@/components/chrono/ChronoScore'
 import { computeChronoScore } from '@/lib/chrono'
 import type { Chronotype, MealType } from '@/lib/chrono'
 import { useAppStore, type MealEntry } from '@/store/useAppStore'
@@ -112,14 +111,11 @@ export default function DashboardPage() {
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs text-neutral-500 uppercase tracking-wide">
-            {format(new Date(), 'EEEE, d MMMM', { locale: ru })}
-          </p>
-          <h1 className="text-2xl font-bold text-neutral-100">Сегодня</h1>
-        </div>
-        <ChronoScore score={currentZone.score} zone={currentZone.zone} size="lg" showLabel label={currentZone.label} />
+      <div>
+        <p className="text-xs text-neutral-500 uppercase tracking-wide">
+          {format(new Date(), 'EEEE, d MMMM', { locale: ru })}
+        </p>
+        <h1 className="text-2xl font-bold text-neutral-100">Сегодня</h1>
       </div>
 
       {/* AI advice — top priority, shown first if available */}
