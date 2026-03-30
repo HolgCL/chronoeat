@@ -1,5 +1,8 @@
+'use client'
+import { useState } from 'react'
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
+import { Pencil, Trash2 } from 'lucide-react'
 import ChronoScore from './ChronoScore'
 import { ZONE_BG } from '@/lib/utils'
 import type { MealEntry } from '@/store/useAppStore'
@@ -11,10 +14,15 @@ const MEAL_TYPE_LABELS: Record<string, string> = {
   dinner:    'Ужин',
 }
 
-interface Props { meal: MealEntry }
+interface Props {
+  meal: MealEntry
+  onEdit:   (meal: MealEntry) => void
+  onDelete: (id: string) => void
+}
 
-export default function MealCard({ meal }: Props) {
+export default function MealCard({ meal, onEdit, onDelete }: Props) {
   const zone = meal.chronoZone as 'green' | 'yellow' | 'red'
+  const [confirming, setConfirming] = useState(false)
 
   return (
     <div className={`flex items-start gap-3 rounded-xl border p-3 ${ZONE_BG[zone]}`}>
@@ -40,6 +48,35 @@ export default function MealCard({ meal }: Props) {
 
         {meal.chronoTip && (
           <p className="mt-1 text-xs italic text-neutral-400">{meal.chronoTip}</p>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="flex flex-col gap-1 shrink-0">
+        <button
+          onClick={() => onEdit(meal)}
+          className="rounded-lg p-1.5 text-neutral-500 hover:text-neutral-200 hover:bg-neutral-700/50 transition-colors"
+          title="Редактировать"
+        >
+          <Pencil size={14} />
+        </button>
+        {confirming ? (
+          <button
+            onClick={() => { setConfirming(false); onDelete(meal.id) }}
+            className="rounded-lg p-1.5 text-red-400 hover:text-red-300 hover:bg-red-900/30 transition-colors"
+            title="Подтвердить удаление"
+          >
+            <Trash2 size={14} />
+          </button>
+        ) : (
+          <button
+            onClick={() => setConfirming(true)}
+            onBlur={() => setConfirming(false)}
+            className="rounded-lg p-1.5 text-neutral-500 hover:text-red-400 hover:bg-red-900/20 transition-colors"
+            title="Удалить"
+          >
+            <Trash2 size={14} />
+          </button>
         )}
       </div>
     </div>

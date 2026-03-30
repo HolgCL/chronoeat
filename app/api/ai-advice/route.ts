@@ -79,7 +79,9 @@ ${mealSummary || 'Нет данных'}
 
         controller.close()
       } catch (err) {
-        controller.error(err)
+        // Close stream silently — client will just show no advice
+        console.error('[ai-advice] API error:', err)
+        controller.close()
       }
     },
   })

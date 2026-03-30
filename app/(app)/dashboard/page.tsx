@@ -14,8 +14,9 @@ import type { Chronotype, MealType } from '@/lib/chrono'
 import { useAppStore, type MealEntry } from '@/store/useAppStore'
 
 export default function DashboardPage() {
-  const { todayMeals, setTodayMeals, addMeal, aiAdvice, setAiAdvice, setAiLoading } = useAppStore()
+  const { todayMeals, setTodayMeals, addMeal, removeMeal, updateMeal, aiAdvice, setAiAdvice, setAiLoading } = useAppStore()
   const [showLogger, setShowLogger]   = useState(false)
+  const [editingMeal, setEditingMeal] = useState<import('@/store/useAppStore').MealEntry | null>(null)
   const [currentHour, setCurrentHour] = useState(new Date().getHours() + new Date().getMinutes() / 60)
   const [chronotype, setChronotype]     = useState<Chronotype>('intermediate')
   const [calorieGoal, setCalorieGoal]   = useState(2000)
@@ -85,6 +86,24 @@ export default function DashboardPage() {
       const meal = await res.json() as MealEntry
       addMeal(meal)
     }
+  }
+
+  async function handleUpdateMeal(data: { name: string; calories: number; protein: number; carbs: number; fat: number; mealType: MealType; loggedAt: string }) {
+    if (!editingMeal) return
+    const res = await fetch(`/api/meals/${editingMeal.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+    if (res.ok) {
+      const meal = await res.json() as MealEntry
+      updateMeal(meal)
+    }
+  }
+
+  async function handleDeleteMeal(id: string) {
+    const res = await fetch(`/api/meals/${id}`, { method: 'DELETE' })
+    if (res.ok) removeMeal(id)
   }
 
   const scoreColor = avgChronoScore >= 70 ? '#1D9E75' : avgChronoScore >= 40 ? '#BA7517' : '#E24B4A'
@@ -158,7 +177,14 @@ export default function DashboardPage() {
             </p>
           </div>
         ) : (
-          todayMeals.map(meal => <MealCard key={meal.id} meal={meal} />)
+          todayMeals.map(meal => (
+            <MealCard
+              key={meal.id}
+              meal={meal}
+              onEdit={setEditingMeal}
+              onDelete={handleDeleteMeal}
+            />
+          ))
         )}
       </div>
 
@@ -173,6 +199,15 @@ export default function DashboardPage() {
           chronotype={chronotype}
           onSave={handleSaveMeal}
           onClose={() => setShowLogger(false)}
+        />
+      )}
+
+      {editingMeal && (
+        <MealLogger
+          chronotype={chronotype}
+          initialMeal={editingMeal}
+          onSave={handleUpdateMeal}
+          onClose={() => setEditingMeal(null)}
         />
       )}
     </div>
