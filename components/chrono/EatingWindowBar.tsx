@@ -40,7 +40,7 @@ export default function EatingWindowBar({ chronotype, firstMealHour, lastMealHou
           style={{ left: pct(start), width: `${windowW}%`, backgroundColor: ZONE_COLORS.green }}
         />
         {/* Actual eating span */}
-        {firstMealHour && lastMealHour && (
+        {firstMealHour != null && lastMealHour != null && (
           <div
             className="absolute top-1 h-3 rounded-full opacity-80"
             style={{ left: pct(firstMealHour), width: `${eatW}%`, backgroundColor: ZONE_COLORS.green }}
