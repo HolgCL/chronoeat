@@ -63,6 +63,24 @@ export default function EatingWindowBar({ chronotype, firstMealHour, lastMealHou
       <div className="flex justify-between text-[11px] text-neutral-500">
         <span>Ночь</span><span>Утро</span><span>День</span><span>Вечер</span><span>Ночь</span>
       </div>
+
+      {/* Legend */}
+      <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-neutral-500 pt-1">
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-2 w-6 rounded-full opacity-20" style={{ backgroundColor: ZONE_COLORS.green }} />
+          Оптимальное окно
+        </span>
+        {firstMealHour != null && lastMealHour != null && (
+          <span className="flex items-center gap-1.5">
+            <span className="inline-block h-2 w-6 rounded-full" style={{ backgroundColor: spanColor }} />
+            Фактическое время еды ({overlap >= 0.7 ? 'в окне' : overlap >= 0.4 ? 'частично в окне' : 'вне окна'})
+          </span>
+        )}
+        <span className="flex items-center gap-1.5">
+          <span className="inline-block h-2 w-0.5 bg-white opacity-70" />
+          Сейчас
+        </span>
+      </div>
     </div>
   )
 }
