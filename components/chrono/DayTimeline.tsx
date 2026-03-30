@@ -1,16 +1,14 @@
 'use client'
 import {
   ComposedChart, Area, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, ReferenceLine, ReferenceArea,
+  Tooltip, ResponsiveContainer, ReferenceLine, ReferenceArea, Customized,
 } from 'recharts'
 import { getDayCurveData, getEatingWindow } from '@/lib/chrono'
 import type { Chronotype } from '@/lib/chrono'
 import { ZONE_COLORS } from '@/lib/utils'
 import type { MealEntry } from '@/store/useAppStore'
 
-// Chart layout constants — must match ComposedChart margin
 const MARGIN = { top: 10, right: 10, left: -20, bottom: 0 }
-const Y_AXIS_WIDTH = 30 // approximate rendered width of YAxis
 
 interface Props {
   chronotype: Chronotype
@@ -39,9 +37,7 @@ export default function DayTimeline({ chronotype, currentHour, meals = [] }: Pro
 
   return (
     <div className="w-full">
-      {/* Wrapper is relative so we can overlay meal dots */}
-      <div className="relative" style={{ height: 220 }}>
-        <ResponsiveContainer width="100%" height={220}>
+      <ResponsiveContainer width="100%" height={220}>
           <ComposedChart data={data} margin={MARGIN}>
             <CartesianGrid strokeDasharray="3 3" stroke="#333" opacity={0.4} />
 
@@ -90,37 +86,33 @@ export default function DayTimeline({ chronotype, currentHour, meals = [] }: Pro
               strokeDasharray="4 2"
               label={{ value: 'сейчас', position: 'top', fill: '#aaa', fontSize: 10 }}
             />
-          </ComposedChart>
-        </ResponsiveContainer>
 
-        {/* Meal dots overlaid as HTML — don't interfere with chart tooltip */}
-        {mealDots.map((m, i) => {
-          const plotLeft = MARGIN.left + Y_AXIS_WIDTH
-          const plotRight = MARGIN.right
-          const pct = m.hour / 24
-          // Position as percentage within the plot area
-          const leftPct = `calc(${plotLeft}px + (100% - ${plotLeft + plotRight}px) * ${pct})`
-          const color = ZONE_COLORS[m.zone]
-          return (
-            <div
-              key={i}
-              title={`${m.name} — ${m.score}/100`}
-              style={{
-                position: 'absolute',
-                left: leftPct,
-                top: '50%',
-                transform: 'translate(-50%, -50%)',
-                width: 12,
-                height: 12,
-                borderRadius: '50%',
-                backgroundColor: color,
-                border: '2px solid #111',
-                pointerEvents: 'none',
-              }}
-            />
-          )
-        })}
-      </div>
+            {/* Meal dots rendered in SVG coordinate space — no tooltip interference */}
+            <Customized component={({ xAxisMap, yAxisMap }: Record<string, unknown>) => {
+              type AxisMap = Record<string, { scale: (v: number) => number }>
+              const xScale = (Object.values(xAxisMap as AxisMap)[0]).scale
+              const yScale = (Object.values(yAxisMap as AxisMap)[0]).scale
+              return (
+                <g>
+                  {mealDots.map((m, i) => (
+                    <circle
+                      key={i}
+                      cx={xScale(m.hour)}
+                      cy={yScale(m.score / 100)}
+                      r={6}
+                      fill={ZONE_COLORS[m.zone]}
+                      stroke="#111"
+                      strokeWidth={2}
+                      style={{ pointerEvents: 'none' }}
+                    >
+                      <title>{m.name} — {m.score}/100</title>
+                    </circle>
+                  ))}
+                </g>
+              )
+            }} />
+          </ComposedChart>
+      </ResponsiveContainer>
 
       {/* Legend */}
       <div className="mt-2 flex flex-wrap gap-4 px-2 text-xs text-neutral-400">
