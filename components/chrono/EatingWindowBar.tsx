@@ -10,76 +10,158 @@ interface Props {
   currentHour: number
 }
 
+function fmt(h: number) {
+  const hh = Math.floor(h)
+  const mm = Math.round((h - hh) * 60)
+  return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`
+}
+
 export default function EatingWindowBar({ chronotype, firstMealHour, lastMealHour, currentHour }: Props) {
   const { start, end } = getEatingWindow(chronotype)
   const DAY = 24
-
   const pct = (h: number) => `${(h / DAY) * 100}%`
 
-  const windowW = ((end - start) / DAY) * 100
-  const eatW = lastMealHour != null && firstMealHour != null ? ((lastMealHour - firstMealHour) / DAY) * 100 : 0
-  const eatL = firstMealHour != null ? (firstMealHour / DAY) * 100 : 0
-  const eatingHours = lastMealHour != null && firstMealHour != null ? (lastMealHour - firstMealHour).toFixed(1) : null
+  const hasMeals = firstMealHour != null && lastMealHour != null
+  const duration = hasMeals ? lastMealHour! - firstMealHour! : null
 
-  // Color the actual eating span based on overlap with optimal window
-  const overlapStart = firstMealHour != null ? Math.max(firstMealHour, start) : start
-  const overlapEnd   = lastMealHour  != null ? Math.min(lastMealHour,  end)   : end
-  const overlap = firstMealHour != null && lastMealHour != null
-    ? Math.max(0, overlapEnd - overlapStart) / (lastMealHour - firstMealHour || 1)
-    : 0
-  const spanColor = overlap >= 0.7 ? ZONE_COLORS.green : overlap >= 0.4 ? ZONE_COLORS.yellow : ZONE_COLORS.red
+  const overlapStart = hasMeals ? Math.max(firstMealHour!, start) : start
+  const overlapEnd   = hasMeals ? Math.min(lastMealHour!, end)   : end
+  const overlap    = hasMeals ? Math.max(0, overlapEnd - overlapStart) / (duration! || 1) : 0
+  const overlapPct = Math.round(overlap * 100)
+  const spanColor  = overlap >= 0.7 ? ZONE_COLORS.green : overlap >= 0.4 ? ZONE_COLORS.yellow : ZONE_COLORS.red
+
+  const firstOk = hasMeals && firstMealHour! >= start && firstMealHour! <= end
+  const lastOk  = hasMeals && lastMealHour!  >= start && lastMealHour!  <= end
+  const durationOk = duration != null && duration <= (end - start)
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between text-xs text-neutral-400">
-        <span>00:00</span>
-        <span className="font-medium text-neutral-200">
-          Окно питания: {String(Math.floor(start)).padStart(2,'0')}:00 – {String(Math.floor(end)).padStart(2,'0')}:00
-          {eatingHours && <span className="ml-2 text-neutral-400">({eatingHours}ч сегодня)</span>}
-        </span>
-        <span>24:00</span>
-      </div>
+    <div className="space-y-4">
 
-      <div className="relative h-5 rounded-full bg-neutral-800 overflow-hidden">
-        {/* Optimal window */}
-        <div
-          className="absolute top-0 h-full rounded-full opacity-20"
-          style={{ left: pct(start), width: `${windowW}%`, backgroundColor: ZONE_COLORS.green }}
-        />
-        {/* Actual eating span */}
-        {firstMealHour != null && lastMealHour != null && (
-          <div
-            className="absolute top-1 h-3 rounded-full opacity-80"
-            style={{ left: pct(firstMealHour), width: `${eatW}%`, backgroundColor: spanColor }}
-          />
-        )}
-        {/* Current time marker */}
-        <div
-          className="absolute top-0 h-full w-0.5 bg-white opacity-70"
-          style={{ left: pct(currentHour) }}
-        />
-      </div>
+      {/* ── Stat chips ── */}
+      {hasMeals && (
+        <div className="grid grid-cols-4 gap-2">
+          {[
+            {
+              label: 'Первый приём',
+              value: fmt(firstMealHour!),
+              color: firstOk ? ZONE_COLORS.green : ZONE_COLORS.red,
+              sub:   firstOk ? 'в окне' : 'вне окна',
+            },
+            {
+              label: 'Последний',
+              value: fmt(lastMealHour!),
+              color: lastOk ? ZONE_COLORS.green : ZONE_COLORS.red,
+              sub:   lastOk ? 'в окне' : 'вне окна',
+            },
+            {
+              label: 'Длина окна',
+              value: `${duration!.toFixed(1)}ч`,
+              color: durationOk ? ZONE_COLORS.green : ZONE_COLORS.yellow,
+              sub:   durationOk ? 'норма' : 'много',
+            },
+            {
+              label: 'В окне',
+              value: `${overlapPct}%`,
+              color: spanColor,
+              sub:   overlapPct >= 70 ? 'отлично' : overlapPct >= 40 ? 'частично' : 'вне окна',
+            },
+          ].map(({ label, value, color, sub }) => (
+            <div key={label} className="rounded-xl bg-neutral-800 p-2.5 text-center space-y-0.5">
+              <p className="text-[10px] text-neutral-500 uppercase tracking-wide leading-tight">{label}</p>
+              <p className="text-base font-bold leading-tight" style={{ color }}>{value}</p>
+              <p className="text-[10px]" style={{ color, opacity: 0.7 }}>{sub}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
-      <div className="flex justify-between text-[11px] text-neutral-500">
-        <span>Ночь</span><span>Утро</span><span>День</span><span>Вечер</span><span>Ночь</span>
-      </div>
-
-      {/* Legend */}
-      <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-neutral-500 pt-1">
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2 w-6 rounded-full opacity-20" style={{ backgroundColor: ZONE_COLORS.green }} />
-          Оптимальное окно
-        </span>
-        {firstMealHour != null && lastMealHour != null && (
-          <span className="flex items-center gap-1.5">
-            <span className="inline-block h-2 w-6 rounded-full" style={{ backgroundColor: spanColor }} />
-            Фактическое время еды ({overlap >= 0.7 ? 'в окне' : overlap >= 0.4 ? 'частично в окне' : 'вне окна'})
+      {/* ── Timeline ── */}
+      <div className="space-y-1.5">
+        <div className="flex justify-between text-[10px] text-neutral-600">
+          <span>00:00</span>
+          <span className="text-neutral-400 font-medium">
+            Оптимально: {String(Math.floor(start)).padStart(2, '0')}:00 – {String(Math.floor(end)).padStart(2, '0')}:00
           </span>
-        )}
-        <span className="flex items-center gap-1.5">
-          <span className="inline-block h-2 w-0.5 bg-white opacity-70" />
-          Сейчас
-        </span>
+          <span>24:00</span>
+        </div>
+
+        <div className="relative h-6 rounded-full bg-neutral-800/80">
+          {/* Optimal window zone */}
+          <div
+            className="absolute top-0 h-full rounded-full"
+            style={{
+              left: pct(start),
+              width: `${((end - start) / DAY) * 100}%`,
+              backgroundColor: ZONE_COLORS.green,
+              opacity: 0.18,
+            }}
+          />
+
+          {/* Actual eating span */}
+          {hasMeals && duration! > 0 && (
+            <div
+              className="absolute rounded-full"
+              style={{
+                top: '10px',
+                height: '4px',
+                left: pct(firstMealHour!),
+                width: `${(duration! / DAY) * 100}%`,
+                backgroundColor: spanColor,
+                opacity: 0.85,
+              }}
+            />
+          )}
+
+          {/* First meal dot */}
+          {hasMeals && (
+            <div
+              className="absolute rounded-full border-2 border-neutral-900"
+              style={{
+                top: '6px', width: '12px', height: '12px',
+                left: `calc(${pct(firstMealHour!)} - 6px)`,
+                backgroundColor: firstOk ? ZONE_COLORS.green : ZONE_COLORS.red,
+              }}
+            />
+          )}
+
+          {/* Last meal dot (only if different from first) */}
+          {hasMeals && lastMealHour !== firstMealHour && (
+            <div
+              className="absolute rounded-full border-2 border-neutral-900"
+              style={{
+                top: '6px', width: '12px', height: '12px',
+                left: `calc(${pct(lastMealHour!)} - 6px)`,
+                backgroundColor: lastOk ? ZONE_COLORS.green : ZONE_COLORS.red,
+              }}
+            />
+          )}
+
+          {/* Current time marker */}
+          <div
+            className="absolute top-0 h-full w-0.5 rounded-full bg-white opacity-60"
+            style={{ left: pct(currentHour) }}
+          />
+        </div>
+
+        <div className="flex justify-between text-[10px] text-neutral-600">
+          <span>Ночь</span><span>Утро</span><span>День</span><span>Вечер</span><span>Ночь</span>
+        </div>
+
+        {/* Mini legend */}
+        <div className="flex gap-4 text-[10px] text-neutral-600 pt-0.5">
+          <span className="flex items-center gap-1">
+            <span className="inline-block h-2 w-4 rounded-full opacity-20" style={{ backgroundColor: ZONE_COLORS.green }} />
+            Оптимальное окно
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block h-1.5 w-4 rounded-full" style={{ backgroundColor: spanColor || '#888' }} />
+            Фактически
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="inline-block h-3 w-0.5 rounded-full bg-white opacity-60" />
+            Сейчас
+          </span>
+        </div>
       </div>
     </div>
   )
