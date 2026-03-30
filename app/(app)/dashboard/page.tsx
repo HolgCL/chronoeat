@@ -13,14 +13,19 @@ import { computeChronoScore } from '@/lib/chrono'
 import type { Chronotype, MealType } from '@/lib/chrono'
 import { useAppStore, type MealEntry } from '@/store/useAppStore'
 
-// In a real app get from session; hardcoded for demo
-const DEFAULT_CHRONOTYPE: Chronotype = 'intermediate'
-const CALORIE_GOAL = 2000
-
 export default function DashboardPage() {
   const { todayMeals, setTodayMeals, addMeal, aiAdvice, setAiAdvice, setAiLoading } = useAppStore()
   const [showLogger, setShowLogger]   = useState(false)
   const [currentHour, setCurrentHour] = useState(new Date().getHours() + new Date().getMinutes() / 60)
+  const [chronotype, setChronotype]   = useState<Chronotype>('intermediate')
+  const [calorieGoal, setCalorieGoal] = useState(2000)
+
+  useEffect(() => {
+    fetch('/api/user').then(r => r.json()).then(data => {
+      if (data.chronotype) setChronotype(data.chronotype)
+      if (data.calorieGoal) setCalorieGoal(data.calorieGoal)
+    })
+  }, [])
 
   // Tick current time every minute
   useEffect(() => {
@@ -62,7 +67,7 @@ export default function DashboardPage() {
     ? Math.round(todayMeals.reduce((s, m) => s + m.chronoScore, 0) / todayMeals.length)
     : 0
 
-  const currentZone = computeChronoScore(currentHour, DEFAULT_CHRONOTYPE, 'snack')
+  const currentZone = computeChronoScore(currentHour, chronotype, 'snack')
   const firstMeal = todayMeals[0] ? new Date(todayMeals[0].loggedAt).getHours() + new Date(todayMeals[0].loggedAt).getMinutes() / 60 : undefined
   const lastMeal  = todayMeals.at(-1) ? new Date(todayMeals.at(-1)!.loggedAt).getHours() + new Date(todayMeals.at(-1)!.loggedAt).getMinutes() / 60 : undefined
 
@@ -93,7 +98,7 @@ export default function DashboardPage() {
 
       {/* Stats row */}
       <div className="grid grid-cols-3 gap-3">
-        <MacroRing consumed={totalCalories} goal={CALORIE_GOAL} label="ккал" />
+        <MacroRing consumed={totalCalories} goal={calorieGoal} label="ккал" />
         <div className="flex flex-col justify-center gap-2">
           <div className="rounded-xl bg-neutral-800/50 p-3">
             <p className="text-xs text-neutral-400">Белок</p>
@@ -120,7 +125,7 @@ export default function DashboardPage() {
       <div className="rounded-xl bg-neutral-900 border border-neutral-800 p-4">
         <h2 className="text-sm font-semibold text-neutral-300 mb-3">Окно питания</h2>
         <EatingWindowBar
-          chronotype={DEFAULT_CHRONOTYPE}
+          chronotype={chronotype}
           firstMealHour={firstMeal}
           lastMealHour={lastMeal}
           currentHour={currentHour}
@@ -130,7 +135,7 @@ export default function DashboardPage() {
       {/* Day timeline */}
       <div className="rounded-xl bg-neutral-900 border border-neutral-800 p-4">
         <h2 className="text-sm font-semibold text-neutral-300 mb-3">Гормональные кривые дня</h2>
-        <DayTimeline chronotype={DEFAULT_CHRONOTYPE} currentHour={currentHour} meals={todayMeals} />
+        <DayTimeline chronotype={chronotype} currentHour={currentHour} meals={todayMeals} />
       </div>
 
       {/* AI advice */}
@@ -161,7 +166,7 @@ export default function DashboardPage() {
 
       {showLogger && (
         <MealLogger
-          chronotype={DEFAULT_CHRONOTYPE}
+          chronotype={chronotype}
           onSave={handleSaveMeal}
           onClose={() => setShowLogger(false)}
         />
