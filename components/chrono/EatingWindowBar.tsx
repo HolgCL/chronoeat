@@ -17,10 +17,17 @@ export default function EatingWindowBar({ chronotype, firstMealHour, lastMealHou
   const pct = (h: number) => `${(h / DAY) * 100}%`
 
   const windowW = ((end - start) / DAY) * 100
-  const windowL = (start / DAY) * 100
-  const eatW = lastMealHour && firstMealHour ? ((lastMealHour - firstMealHour) / DAY) * 100 : 0
-  const eatL = firstMealHour ? (firstMealHour / DAY) * 100 : 0
-  const eatingHours = lastMealHour && firstMealHour ? (lastMealHour - firstMealHour).toFixed(1) : null
+  const eatW = lastMealHour != null && firstMealHour != null ? ((lastMealHour - firstMealHour) / DAY) * 100 : 0
+  const eatL = firstMealHour != null ? (firstMealHour / DAY) * 100 : 0
+  const eatingHours = lastMealHour != null && firstMealHour != null ? (lastMealHour - firstMealHour).toFixed(1) : null
+
+  // Color the actual eating span based on overlap with optimal window
+  const overlapStart = firstMealHour != null ? Math.max(firstMealHour, start) : start
+  const overlapEnd   = lastMealHour  != null ? Math.min(lastMealHour,  end)   : end
+  const overlap = firstMealHour != null && lastMealHour != null
+    ? Math.max(0, overlapEnd - overlapStart) / (lastMealHour - firstMealHour || 1)
+    : 0
+  const spanColor = overlap >= 0.7 ? ZONE_COLORS.green : overlap >= 0.4 ? ZONE_COLORS.yellow : ZONE_COLORS.red
 
   return (
     <div className="space-y-2">
@@ -43,7 +50,7 @@ export default function EatingWindowBar({ chronotype, firstMealHour, lastMealHou
         {firstMealHour != null && lastMealHour != null && (
           <div
             className="absolute top-1 h-3 rounded-full opacity-80"
-            style={{ left: pct(firstMealHour), width: `${eatW}%`, backgroundColor: ZONE_COLORS.green }}
+            style={{ left: pct(firstMealHour), width: `${eatW}%`, backgroundColor: spanColor }}
           />
         )}
         {/* Current time marker */}
