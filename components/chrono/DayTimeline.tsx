@@ -18,11 +18,15 @@ export default function DayTimeline({ chronotype, currentHour, meals = [] }: Pro
   const data = getDayCurveData(chronotype)
   const window = getEatingWindow(chronotype)
 
-  // Merge meal dots into chart data
-  const mealDots = meals.map(m => {
-    const h = new Date(m.loggedAt).getHours() + new Date(m.loggedAt).getMinutes() / 60
-    return { hour: h, meal: m.chronoScore / 100, name: m.name, score: m.chronoScore, zone: m.chronoZone as 'green' | 'yellow' | 'red' }
-  })
+  // Merge meal dots into chart data — only today's meals in local time
+  const todayStr = new Date().toDateString()
+  const mealDots = meals
+    .filter(m => new Date(m.loggedAt).toDateString() === todayStr)
+    .map(m => {
+      const d = new Date(m.loggedAt)
+      const h = d.getHours() + d.getMinutes() / 60
+      return { hour: h, meal: m.chronoScore / 100, name: m.name, score: m.chronoScore, zone: m.chronoZone as 'green' | 'yellow' | 'red' }
+    })
 
   const formatHour = (h: number) => {
     const hh = Math.floor(h)

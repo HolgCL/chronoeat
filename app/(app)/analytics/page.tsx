@@ -59,9 +59,10 @@ export default function AnalyticsPage() {
     async function load() {
       // Fetch meals for last 7 days by querying each day or use bulk endpoint
       const allMeals: MealEntry[] = []
+      const tz = new Date().getTimezoneOffset()
       for (let i = 6; i >= 0; i--) {
-        const date = format(subDays(new Date(), i), 'yyyy-MM-dd')
-        const res = await fetch(`/api/meals?date=${date}`)
+        const date = subDays(new Date(), i).toLocaleDateString('en-CA')
+        const res = await fetch(`/api/meals?date=${date}&tz=${tz}`)
         if (res.ok) {
           const meals = await res.json() as MealEntry[]
           allMeals.push(...meals)

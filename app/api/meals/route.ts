@@ -10,11 +10,21 @@ export async function GET(req: NextRequest) {
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const dateParam = req.nextUrl.searchParams.get('date')
-  const target = dateParam ? new Date(dateParam) : new Date()
+  const tz = parseInt(req.nextUrl.searchParams.get('tz') ?? '0') // getTimezoneOffset() value: UTC+3 = -180
+  let start: Date, end: Date
+  if (dateParam) {
+    const [year, month, day] = dateParam.split('-').map(Number)
+    start = new Date(Date.UTC(year, month - 1, day, 0, 0, 0) + tz * 60 * 1000)
+    end   = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999) + tz * 60 * 1000)
+  } else {
+    const now = new Date()
+    start = startOfDay(now)
+    end   = endOfDay(now)
+  }
   const meals = await prisma.meal.findMany({
     where: {
       userId: session.user.id,
-      loggedAt: { gte: startOfDay(target), lte: endOfDay(target) },
+      loggedAt: { gte: start, lte: end },
     },
     orderBy: { loggedAt: 'asc' },
   })

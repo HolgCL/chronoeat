@@ -36,7 +36,9 @@ export default function DashboardPage() {
   }, [])
 
   const loadMeals = useCallback(async () => {
-    const res = await fetch('/api/meals')
+    const localDate = new Date().toLocaleDateString('en-CA') // YYYY-MM-DD in local time
+    const tz = new Date().getTimezoneOffset()
+    const res = await fetch(`/api/meals?date=${localDate}&tz=${tz}`)
     if (res.ok) setTodayMeals(await res.json())
   }, [setTodayMeals])
 
