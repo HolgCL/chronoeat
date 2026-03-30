@@ -75,9 +75,9 @@ export default function DayTimeline({ chronotype, currentHour, meals = [] }: Pro
           />
 
           {/* Hormone curves */}
-          <Area dataKey="cortisol"  name="Кортизол"  type="monotone" fill="#EF9F27" stroke="#EF9F27" fillOpacity={0.1} dot={false} />
-          <Area dataKey="insulin"   name="Инсулин"   type="monotone" fill="#1D9E75" stroke="#1D9E75" fillOpacity={0.1} dot={false} />
-          <Area dataKey="melatonin" name="Мелатонин" type="monotone" fill="#7F77DD" stroke="#7F77DD" fillOpacity={0.1} dot={false} />
+          <Area dataKey="cortisol"  name="Кортизол"  type="monotone" fill="#EF9F27" stroke="#EF9F27" fillOpacity={0.1} dot={false} activeDot={{ r: 4 }} isAnimationActive={false} />
+          <Area dataKey="insulin"   name="Инсулин"   type="monotone" fill="#1D9E75" stroke="#1D9E75" fillOpacity={0.1} dot={false} activeDot={{ r: 4 }} isAnimationActive={false} />
+          <Area dataKey="melatonin" name="Мелатонин" type="monotone" fill="#7F77DD" stroke="#7F77DD" fillOpacity={0.1} dot={false} activeDot={{ r: 4 }} isAnimationActive={false} />
 
           {/* Current time line */}
           <ReferenceLine

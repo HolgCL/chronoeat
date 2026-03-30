@@ -229,11 +229,13 @@ export function getMacroRecommendation(
  *
  * @param chronotype
  */
-export function getDayCurveData(chronotype: Chronotype) {
+export function getDayCurveData(chronotype: Chronotype, stepMinutes = 5) {
   const offset = CHRONOTYPE_OFFSET[chronotype]
+  const step = stepMinutes / 60
+  const count = Math.round(24 / step)
   const points = []
-  for (let i = 0; i <= 48; i++) {
-    const hour = i * 0.5
+  for (let i = 0; i <= count; i++) {
+    const hour = Math.min(i * step, 24)
     points.push({
       hour,
       cortisol:  Math.round(getCortisolLevel(hour, offset) * 100) / 100,
