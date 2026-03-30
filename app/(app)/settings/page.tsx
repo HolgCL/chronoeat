@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import { MCTQ_QUESTIONS, determineChronotype } from '@/lib/chronotype'
@@ -30,6 +30,13 @@ export default function SettingsPage() {
   const [answers, setAnswers] = useState<number[]>(Array(MCTQ_QUESTIONS.length).fill(3))
   const [saved, setSaved] = useState(false)
 
+  useEffect(() => {
+    fetch('/api/user').then(r => r.json()).then(data => {
+      if (data.chronotype) setChronotype(data.chronotype)
+      if (data.calorieGoal) setCalorieGoal(data.calorieGoal)
+    })
+  }, [])
+
   function handleAnswerChange(idx: number, val: number) {
     setAnswers(prev => { const a = [...prev]; a[idx] = val; return a })
   }
@@ -40,8 +47,12 @@ export default function SettingsPage() {
     setShowMctq(false)
   }
 
-  function handleSave() {
-    // In a real app, persist to user profile via API
+  async function handleSave() {
+    await fetch('/api/user', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chronotype, calorieGoal }),
+    })
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
