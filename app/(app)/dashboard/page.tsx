@@ -17,13 +17,15 @@ export default function DashboardPage() {
   const { todayMeals, setTodayMeals, addMeal, aiAdvice, setAiAdvice, setAiLoading } = useAppStore()
   const [showLogger, setShowLogger]   = useState(false)
   const [currentHour, setCurrentHour] = useState(new Date().getHours() + new Date().getMinutes() / 60)
-  const [chronotype, setChronotype]   = useState<Chronotype>('intermediate')
-  const [calorieGoal, setCalorieGoal] = useState(2000)
+  const [chronotype, setChronotype]     = useState<Chronotype>('intermediate')
+  const [calorieGoal, setCalorieGoal]   = useState(2000)
+  const [proteinGoal, setProteinGoal]   = useState(150)
 
   useEffect(() => {
     fetch('/api/user').then(r => r.json()).then(data => {
       if (data.chronotype) setChronotype(data.chronotype)
       if (data.calorieGoal) setCalorieGoal(data.calorieGoal)
+      if (data.proteinGoal) setProteinGoal(data.proteinGoal)
     })
   }, [])
 
@@ -101,11 +103,8 @@ export default function DashboardPage() {
       {/* Stats row */}
       <div className="grid grid-cols-3 gap-3">
         <MacroRing consumed={totalCalories} goal={calorieGoal} label="ккал" />
+        <MacroRing consumed={Math.round(totalProtein)} goal={proteinGoal} label="белок г" />
         <div className="flex flex-col justify-center gap-2">
-          <div className="rounded-xl bg-neutral-800/50 p-3">
-            <p className="text-xs text-neutral-400">Белок</p>
-            <p className="text-lg font-bold text-neutral-100">{totalProtein.toFixed(0)}<span className="text-xs text-neutral-400">г</span></p>
-          </div>
           <div className="rounded-xl bg-neutral-800/50 p-3">
             <p className="text-xs text-neutral-400">Хроно-балл</p>
             <p className="text-lg font-bold" style={{ color: avgChronoScore >= 70 ? '#1D9E75' : avgChronoScore >= 40 ? '#BA7517' : '#E24B4A' }}>

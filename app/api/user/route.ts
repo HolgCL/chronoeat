@@ -8,7 +8,7 @@ export async function GET() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { chronotype: true, calorieGoal: true, wakeUpTime: true, sleepTime: true },
+    select: { chronotype: true, calorieGoal: true, proteinGoal: true, wakeUpTime: true, sleepTime: true },
   })
   return NextResponse.json(user)
 }
@@ -18,15 +18,16 @@ export async function PATCH(req: Request) {
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
-  const { chronotype, calorieGoal } = body
+  const { chronotype, calorieGoal, proteinGoal } = body
 
   const user = await prisma.user.update({
     where: { id: session.user.id },
     data: {
       ...(chronotype !== undefined && { chronotype }),
       ...(calorieGoal !== undefined && { calorieGoal: Number(calorieGoal) }),
+      ...(proteinGoal !== undefined && { proteinGoal: Number(proteinGoal) }),
     },
-    select: { chronotype: true, calorieGoal: true },
+    select: { chronotype: true, calorieGoal: true, proteinGoal: true },
   })
   return NextResponse.json(user)
 }

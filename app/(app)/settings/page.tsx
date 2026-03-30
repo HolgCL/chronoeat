@@ -26,6 +26,7 @@ export default function SettingsPage() {
   const router = useRouter()
   const [chronotype, setChronotype] = useState<Chronotype>('intermediate')
   const [calorieGoal, setCalorieGoal] = useState(2000)
+  const [proteinGoal, setProteinGoal] = useState(150)
   const [showMctq, setShowMctq] = useState(false)
   const [answers, setAnswers] = useState<number[]>(Array(MCTQ_QUESTIONS.length).fill(3))
   const [saved, setSaved] = useState(false)
@@ -35,6 +36,7 @@ export default function SettingsPage() {
     fetch('/api/user').then(r => r.json()).then(data => {
       if (data.chronotype) setChronotype(data.chronotype)
       if (data.calorieGoal) setCalorieGoal(data.calorieGoal)
+      if (data.proteinGoal) setProteinGoal(data.proteinGoal)
     })
   }, [])
 
@@ -53,7 +55,7 @@ export default function SettingsPage() {
     const res = await fetch('/api/user', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chronotype, calorieGoal }),
+      body: JSON.stringify({ chronotype, calorieGoal, proteinGoal }),
     })
     if (res.ok) {
       setSaved(true)
@@ -172,6 +174,20 @@ export default function SettingsPage() {
             className="w-24 rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-1.5 text-sm text-neutral-100 outline-none"
           />
           <span className="text-xs text-neutral-500">ккал/день</span>
+        </div>
+      </div>
+
+      {/* Protein goal */}
+      <div className="rounded-xl bg-neutral-900 border border-neutral-800 p-4 space-y-3">
+        <h2 className="text-sm font-semibold text-neutral-300">Цель по белку</h2>
+        <div className="flex items-center gap-2">
+          <label className="text-xs text-neutral-500">Граммов в день:</label>
+          <input
+            type="number" min={30} max={400} value={proteinGoal}
+            onChange={e => setProteinGoal(Number(e.target.value))}
+            className="w-24 rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-1.5 text-sm text-neutral-100 outline-none"
+          />
+          <span className="text-xs text-neutral-500">г/день</span>
         </div>
       </div>
 
