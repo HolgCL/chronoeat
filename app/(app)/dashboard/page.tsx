@@ -87,8 +87,11 @@ export default function DashboardPage() {
     }
   }
 
+  const scoreColor = avgChronoScore >= 70 ? '#1D9E75' : avgChronoScore >= 40 ? '#BA7517' : '#E24B4A'
+
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+    <div className="max-w-2xl mx-auto px-4 py-6 space-y-4">
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -100,27 +103,38 @@ export default function DashboardPage() {
         <ChronoScore score={currentZone.score} zone={currentZone.zone} size="lg" showLabel label={currentZone.label} />
       </div>
 
-      {/* Stats row */}
-      <div className="grid grid-cols-3 gap-3">
-        <MacroRing consumed={totalCalories} goal={calorieGoal} label="ккал" />
-        <MacroRing consumed={Math.round(totalProtein)} goal={proteinGoal} label="белок г" />
-        <div className="flex flex-col justify-center gap-2">
-          <div className="rounded-xl bg-neutral-800/50 p-3">
-            <p className="text-xs text-neutral-400">Хроно-балл</p>
-            <p className="text-lg font-bold" style={{ color: avgChronoScore >= 70 ? '#1D9E75' : avgChronoScore >= 40 ? '#BA7517' : '#E24B4A' }}>
-              {avgChronoScore}<span className="text-xs text-neutral-400">/100</span>
-            </p>
+      {/* AI advice — top priority, shown first if available */}
+      {aiAdvice && (
+        <div className="rounded-xl bg-neutral-900 border border-[#1D9E75]/30 p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles size={14} className="text-[#1D9E75]" />
+            <h2 className="text-sm font-semibold text-[#1D9E75]">AI-совет на сегодня</h2>
+          </div>
+          <p className="text-sm text-neutral-300 whitespace-pre-line">{aiAdvice}</p>
+        </div>
+      )}
+
+      {/* Macro rings + chrono stat */}
+      <div className="rounded-xl bg-neutral-900 border border-neutral-800 p-4">
+        <div className="flex items-center justify-around">
+          <MacroRing consumed={totalCalories} goal={calorieGoal} label="ккал" />
+          <MacroRing consumed={Math.round(totalProtein)} goal={proteinGoal} label="белок г" />
+          <div className="flex flex-col items-center gap-1">
+            <p className="text-xs text-neutral-500 uppercase tracking-wide">Хроно-балл</p>
+            <p className="text-4xl font-bold" style={{ color: scoreColor }}>{avgChronoScore}</p>
+            <p className="text-xs text-neutral-500">из 100</p>
           </div>
         </div>
-        <div className="flex flex-col justify-center">
-          <button
-            onClick={() => setShowLogger(true)}
-            className="flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-neutral-700 p-4 text-neutral-400 hover:border-[#1D9E75] hover:text-[#1D9E75] transition-colors h-full"
-          >
-            <Plus size={24} /><span className="text-xs">Добавить</span>
-          </button>
-        </div>
       </div>
+
+      {/* Add meal — primary CTA */}
+      <button
+        onClick={() => setShowLogger(true)}
+        className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#1D9E75] py-3.5 text-sm font-semibold text-white hover:bg-[#178a64] transition-colors"
+      >
+        <Plus size={18} />
+        Добавить приём пищи
+      </button>
 
       {/* Eating window */}
       <div className="rounded-xl bg-neutral-900 border border-neutral-800 p-4">
@@ -132,23 +146,6 @@ export default function DashboardPage() {
           currentHour={currentHour}
         />
       </div>
-
-      {/* Day timeline */}
-      <div className="rounded-xl bg-neutral-900 border border-neutral-800 p-4">
-        <h2 className="text-sm font-semibold text-neutral-300 mb-3">Гормональные кривые дня</h2>
-        <DayTimeline chronotype={chronotype} currentHour={currentHour} meals={todayMeals} />
-      </div>
-
-      {/* AI advice */}
-      {(aiAdvice) && (
-        <div className="rounded-xl bg-neutral-900 border border-[#1D9E75]/30 p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <Sparkles size={14} className="text-[#1D9E75]" />
-            <h2 className="text-sm font-semibold text-[#1D9E75]">AI-совет на сегодня</h2>
-          </div>
-          <p className="text-sm text-neutral-300 whitespace-pre-line">{aiAdvice}</p>
-        </div>
-      )}
 
       {/* Meals list */}
       <div className="space-y-2">
@@ -163,6 +160,12 @@ export default function DashboardPage() {
         ) : (
           todayMeals.map(meal => <MealCard key={meal.id} meal={meal} />)
         )}
+      </div>
+
+      {/* Hormone curves — detailed analysis, below the fold */}
+      <div className="rounded-xl bg-neutral-900 border border-neutral-800 p-4">
+        <h2 className="text-sm font-semibold text-neutral-300 mb-3">Гормональные кривые дня</h2>
+        <DayTimeline chronotype={chronotype} currentHour={currentHour} meals={todayMeals} />
       </div>
 
       {showLogger && (
