@@ -1,16 +1,13 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { format } from 'date-fns'
 import { X } from 'lucide-react'
 import FoodSearch from './FoodSearch'
-import ChronoScore from '@/components/chrono/ChronoScore'
 import type { FoodPortion } from '@/lib/food-search'
-import type { MealType, Chronotype } from '@/lib/chrono'
-import type { ChronoScore as ChronoScoreType } from '@/lib/chrono'
+import type { MealType } from '@/lib/chrono'
 import type { MealEntry } from '@/store/useAppStore'
 
 interface Props {
-  chronotype: Chronotype
   onSave: (meal: {
     name: string; calories: number; protein: number; carbs: number;
     fat: number; mealType: MealType; loggedAt: string
@@ -27,7 +24,7 @@ const MEAL_TYPES: { value: MealType; label: string }[] = [
   { value: 'dinner',    label: 'Ужин' },
 ]
 
-export default function MealLogger({ chronotype, onSave, onClose, inline, initialMeal }: Props) {
+export default function MealLogger({ onSave, onClose, inline, initialMeal }: Props) {
   const [food, setFood]         = useState<FoodPortion | null>(null)
   const [grams, setGrams]       = useState(100)
   const [mealType, setMealType] = useState<MealType>(initialMeal?.mealType as MealType ?? 'lunch')
@@ -36,7 +33,6 @@ export default function MealLogger({ chronotype, onSave, onClose, inline, initia
       ? format(new Date(initialMeal.loggedAt), 'HH:mm')
       : format(new Date(), 'HH:mm')
   )
-  const [chronoPreview, setChronoPreview] = useState<ChronoScoreType | null>(null)
   const [saving, setSaving]     = useState(false)
 
   // When editing, show a manual nutrient override instead of food search
@@ -47,15 +43,6 @@ export default function MealLogger({ chronotype, onSave, onClose, inline, initia
   const [manualCarbs, setManualCarbs]       = useState(initialMeal?.carbs ?? 0)
   const [manualFat, setManualFat]           = useState(initialMeal?.fat ?? 0)
 
-  // Real-time chrono preview
-  useEffect(() => {
-    const [h, m] = time.split(':').map(Number)
-    const hour = h + m / 60
-    fetch(`/api/chrono-score?hour=${hour}&chronotype=${chronotype}&mealType=${mealType}`)
-      .then(r => r.json())
-      .then(setChronoPreview)
-      .catch(() => {})
-  }, [time, mealType, chronotype])
 
   const adjustedFood = food
     ? { ...food, calories: Math.round(food.caloriesPer100g * grams / 100), protein: +(food.proteinPer100g * grams / 100).toFixed(1), carbs: +(food.carbsPer100g * grams / 100).toFixed(1), fat: +(food.fatPer100g * grams / 100).toFixed(1) }
@@ -106,13 +93,6 @@ export default function MealLogger({ chronotype, onSave, onClose, inline, initia
           <button onClick={onClose} className="text-neutral-400 hover:text-neutral-100"><X size={20} /></button>
         </div>
 
-        {/* Chrono preview */}
-        {chronoPreview && (
-          <div className="flex items-center gap-4 rounded-xl bg-neutral-800 p-3">
-            <ChronoScore score={chronoPreview.score} zone={chronoPreview.zone} size="lg" showLabel label={chronoPreview.label} />
-            <p className="text-sm italic text-neutral-400">{chronoPreview.tip}</p>
-          </div>
-        )}
 
         {manualMode ? (
           /* Manual edit fields */

@@ -192,7 +192,6 @@ export default function DashboardPage() {
 
       {showLogger && (
         <MealLogger
-          chronotype={chronotype}
           onSave={handleSaveMeal}
           onClose={() => setShowLogger(false)}
         />
@@ -200,7 +199,6 @@ export default function DashboardPage() {
 
       {editingMeal && (
         <MealLogger
-          chronotype={chronotype}
           initialMeal={editingMeal}
           onSave={handleUpdateMeal}
           onClose={() => setEditingMeal(null)}

@@ -45,7 +45,6 @@ export default function LogPage() {
         </div>
       ) : (
         <MealLogger
-          chronotype={chronotype}
           onSave={handleSaveMeal}
           onClose={() => router.push('/dashboard')}
           inline
