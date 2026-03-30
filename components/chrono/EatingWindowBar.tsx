@@ -1,5 +1,5 @@
 'use client'
-import { getEatingWindow } from '@/lib/chrono'
+import { getEatingWindow, getSleepSchedule } from '@/lib/chrono'
 import type { Chronotype } from '@/lib/chrono'
 import { ZONE_COLORS } from '@/lib/utils'
 
@@ -8,8 +8,6 @@ interface Props {
   firstMealHour?: number
   lastMealHour?: number
   currentHour: number
-  wakeUpTime?: number  // e.g. 7.0
-  sleepTime?: number   // e.g. 23.0
 }
 
 function fmt(h: number) {
@@ -18,11 +16,9 @@ function fmt(h: number) {
   return `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`
 }
 
-export default function EatingWindowBar({
-  chronotype, firstMealHour, lastMealHour, currentHour,
-  wakeUpTime = 7, sleepTime = 23,
-}: Props) {
+export default function EatingWindowBar({ chronotype, firstMealHour, lastMealHour, currentHour }: Props) {
   const { start, end } = getEatingWindow(chronotype)
+  const { wakeUp: wakeUpTime, bedtime: sleepTime } = getSleepSchedule(chronotype)
   const DAY = 24
   const pct  = (h: number) => `${(h / DAY) * 100}%`
   const wpct = (h: number) => `${(h / DAY) * 100}%`
