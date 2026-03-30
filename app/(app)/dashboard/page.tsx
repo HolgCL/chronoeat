@@ -20,12 +20,16 @@ export default function DashboardPage() {
   const [chronotype, setChronotype]     = useState<Chronotype>('intermediate')
   const [calorieGoal, setCalorieGoal]   = useState(2000)
   const [proteinGoal, setProteinGoal]   = useState(150)
+  const [wakeUpTime, setWakeUpTime]     = useState(7.0)
+  const [sleepTime, setSleepTime]       = useState(23.0)
 
   useEffect(() => {
     fetch('/api/user').then(r => r.json()).then(data => {
       if (data.chronotype) setChronotype(data.chronotype)
       if (data.calorieGoal) setCalorieGoal(data.calorieGoal)
       if (data.proteinGoal) setProteinGoal(data.proteinGoal)
+      if (data.wakeUpTime != null) setWakeUpTime(data.wakeUpTime)
+      if (data.sleepTime  != null) setSleepTime(data.sleepTime)
     })
   }, [])
 
@@ -159,6 +163,8 @@ export default function DashboardPage() {
           firstMealHour={firstMeal}
           lastMealHour={lastMeal}
           currentHour={currentHour}
+          wakeUpTime={wakeUpTime}
+          sleepTime={sleepTime}
         />
       </div>
 

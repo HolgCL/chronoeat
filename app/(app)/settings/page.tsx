@@ -27,6 +27,8 @@ export default function SettingsPage() {
   const [chronotype, setChronotype] = useState<Chronotype>('intermediate')
   const [calorieGoal, setCalorieGoal] = useState(2000)
   const [proteinGoal, setProteinGoal] = useState(150)
+  const [wakeUpTime, setWakeUpTime] = useState(7.0)
+  const [sleepTime, setSleepTime]   = useState(23.0)
   const [showMctq, setShowMctq] = useState(false)
   const [answers, setAnswers] = useState<number[]>(Array(MCTQ_QUESTIONS.length).fill(3))
   const [saved, setSaved] = useState(false)
@@ -37,6 +39,8 @@ export default function SettingsPage() {
       if (data.chronotype) setChronotype(data.chronotype)
       if (data.calorieGoal) setCalorieGoal(data.calorieGoal)
       if (data.proteinGoal) setProteinGoal(data.proteinGoal)
+      if (data.wakeUpTime != null) setWakeUpTime(data.wakeUpTime)
+      if (data.sleepTime  != null) setSleepTime(data.sleepTime)
     })
   }, [])
 
@@ -55,7 +59,7 @@ export default function SettingsPage() {
     const res = await fetch('/api/user', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chronotype, calorieGoal, proteinGoal }),
+      body: JSON.stringify({ chronotype, calorieGoal, proteinGoal, wakeUpTime, sleepTime }),
     })
     if (res.ok) {
       setSaved(true)
@@ -188,6 +192,38 @@ export default function SettingsPage() {
             className="w-24 rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-1.5 text-sm text-neutral-100 outline-none"
           />
           <span className="text-xs text-neutral-500">г/день</span>
+        </div>
+      </div>
+
+      {/* Sleep schedule */}
+      <div className="rounded-xl bg-neutral-900 border border-neutral-800 p-4 space-y-3">
+        <h2 className="text-sm font-semibold text-neutral-300">Режим сна</h2>
+        <p className="text-xs text-neutral-500">Используется для отображения зон сна на графике окна питания</p>
+        <div className="flex flex-wrap gap-4">
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-neutral-500 w-24">Подъём:</label>
+            <input
+              type="time"
+              value={`${String(Math.floor(wakeUpTime)).padStart(2,'0')}:${String(Math.round((wakeUpTime % 1) * 60)).padStart(2,'0')}`}
+              onChange={e => {
+                const [h, m] = e.target.value.split(':').map(Number)
+                setWakeUpTime(h + m / 60)
+              }}
+              className="rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-1.5 text-sm text-neutral-100 outline-none"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-xs text-neutral-500 w-24">Отход ко сну:</label>
+            <input
+              type="time"
+              value={`${String(Math.floor(sleepTime)).padStart(2,'0')}:${String(Math.round((sleepTime % 1) * 60)).padStart(2,'0')}`}
+              onChange={e => {
+                const [h, m] = e.target.value.split(':').map(Number)
+                setSleepTime(h + m / 60)
+              }}
+              className="rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-1.5 text-sm text-neutral-100 outline-none"
+            />
+          </div>
         </div>
       </div>
 

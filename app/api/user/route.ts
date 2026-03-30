@@ -18,16 +18,18 @@ export async function PATCH(req: Request) {
   if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
-  const { chronotype, calorieGoal, proteinGoal } = body
+  const { chronotype, calorieGoal, proteinGoal, wakeUpTime, sleepTime } = body
 
   const user = await prisma.user.update({
     where: { id: session.user.id },
     data: {
-      ...(chronotype !== undefined && { chronotype }),
+      ...(chronotype  !== undefined && { chronotype }),
       ...(calorieGoal !== undefined && { calorieGoal: Number(calorieGoal) }),
       ...(proteinGoal !== undefined && { proteinGoal: Number(proteinGoal) }),
+      ...(wakeUpTime  !== undefined && { wakeUpTime:  Number(wakeUpTime) }),
+      ...(sleepTime   !== undefined && { sleepTime:   Number(sleepTime) }),
     },
-    select: { chronotype: true, calorieGoal: true, proteinGoal: true },
+    select: { chronotype: true, calorieGoal: true, proteinGoal: true, wakeUpTime: true, sleepTime: true },
   })
   return NextResponse.json(user)
 }
