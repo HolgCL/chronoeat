@@ -5,9 +5,6 @@ import { prisma } from '@/lib/db'
 import { subDays } from 'date-fns'
 
 const client = new Anthropic()
-
-// Simple in-memory cache: userId → { text, expiresAt }
-const cache = new Map<string, { text: string; expiresAt: number }>()
 const TTL_MS = 6 * 60 * 60 * 1000 // 6 hours
 
 export async function POST(req: NextRequest) {
@@ -16,14 +13,23 @@ export async function POST(req: NextRequest) {
 
   const userId = session.user.id
 
-  // Check cache
-  const cached = cache.get(userId)
-  if (cached && cached.expiresAt > Date.now()) {
-    return NextResponse.json({ advice: cached.text })
-  }
-
   const user = await prisma.user.findUnique({ where: { id: userId } })
   if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
+
+  // Check DB-persisted cache
+  if (user.aiAdviceCache && user.aiAdviceCachedAt) {
+    const age = Date.now() - new Date(user.aiAdviceCachedAt).getTime()
+    if (age < TTL_MS) {
+      const encoder = new TextEncoder()
+      const stream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(encoder.encode(user.aiAdviceCache!))
+          controller.close()
+        },
+      })
+      return new Response(stream, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } })
+    }
+  }
 
   const meals = await prisma.meal.findMany({
     where: { userId, loggedAt: { gte: subDays(new Date(), 7) } },
@@ -47,7 +53,6 @@ export async function POST(req: NextRequest) {
 ${mealSummary || 'Нет данных'}
 `.trim()
 
-  // Streaming response
   const encoder = new TextEncoder()
   const stream = new ReadableStream({
     async start(controller) {
@@ -61,16 +66,17 @@ ${mealSummary || 'Нет данных'}
         })
 
         for await (const event of response) {
-          if (
-            event.type === 'content_block_delta' &&
-            event.delta.type === 'text_delta'
-          ) {
+          if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
             fullText += event.delta.text
             controller.enqueue(encoder.encode(event.delta.text))
           }
         }
 
-        cache.set(userId, { text: fullText, expiresAt: Date.now() + TTL_MS })
+        await prisma.user.update({
+          where: { id: userId },
+          data: { aiAdviceCache: fullText, aiAdviceCachedAt: new Date() },
+        })
+
         controller.close()
       } catch (err) {
         controller.error(err)

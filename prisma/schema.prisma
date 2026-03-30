@@ -16,8 +16,10 @@ model User {
   wakeUpTime   Float       @default(7.0)
   sleepTime    Float       @default(23.0)
   calorieGoal  Int         @default(2000)
-  proteinGoal  Int         @default(150)
-  createdAt    DateTime    @default(now())
+  proteinGoal        Int         @default(150)
+  aiAdviceCache      String?
+  aiAdviceCachedAt   DateTime?
+  createdAt          DateTime    @default(now())
   meals        Meal[]
   chronoLogs   ChronoLog[]
   accounts     Account[]

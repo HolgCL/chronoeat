@@ -29,6 +29,7 @@ export default function SettingsPage() {
   const [showMctq, setShowMctq] = useState(false)
   const [answers, setAnswers] = useState<number[]>(Array(MCTQ_QUESTIONS.length).fill(3))
   const [saved, setSaved] = useState(false)
+  const [saveError, setSaveError] = useState(false)
 
   useEffect(() => {
     fetch('/api/user').then(r => r.json()).then(data => {
@@ -48,13 +49,19 @@ export default function SettingsPage() {
   }
 
   async function handleSave() {
-    await fetch('/api/user', {
+    setSaveError(false)
+    const res = await fetch('/api/user', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chronotype, calorieGoal }),
     })
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+    if (res.ok) {
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } else {
+      setSaveError(true)
+      setTimeout(() => setSaveError(false), 3000)
+    }
   }
 
   const window_ = getEatingWindow(chronotype)
@@ -171,9 +178,9 @@ export default function SettingsPage() {
       {/* Save */}
       <button
         onClick={handleSave}
-        className="w-full rounded-xl bg-[#1D9E75] py-3 text-sm font-semibold text-white hover:bg-[#178a64] transition-colors"
+        className={`w-full rounded-xl py-3 text-sm font-semibold text-white transition-colors ${saveError ? 'bg-red-600 hover:bg-red-700' : 'bg-[#1D9E75] hover:bg-[#178a64]'}`}
       >
-        {saved ? '✓ Сохранено' : 'Сохранить настройки'}
+        {saved ? '✓ Сохранено' : saveError ? 'Ошибка сохранения' : 'Сохранить настройки'}
       </button>
 
       {/* Sign out */}

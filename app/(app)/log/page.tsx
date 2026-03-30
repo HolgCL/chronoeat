@@ -1,16 +1,21 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import MealLogger from '@/components/meals/MealLogger'
-import type { MealType } from '@/lib/chrono'
+import type { Chronotype, MealType } from '@/lib/chrono'
 import { useAppStore, type MealEntry } from '@/store/useAppStore'
-
-const DEFAULT_CHRONOTYPE = 'intermediate' as const
 
 export default function LogPage() {
   const router = useRouter()
   const { addMeal } = useAppStore()
   const [saved, setSaved] = useState(false)
+  const [chronotype, setChronotype] = useState<Chronotype>('intermediate')
+
+  useEffect(() => {
+    fetch('/api/user').then(r => r.json()).then(data => {
+      if (data.chronotype) setChronotype(data.chronotype)
+    })
+  }, [])
 
   async function handleSaveMeal(data: { name: string; calories: number; protein: number; carbs: number; fat: number; mealType: MealType; loggedAt: string }) {
     const res = await fetch('/api/meals', {
@@ -40,7 +45,7 @@ export default function LogPage() {
         </div>
       ) : (
         <MealLogger
-          chronotype={DEFAULT_CHRONOTYPE}
+          chronotype={chronotype}
           onSave={handleSaveMeal}
           onClose={() => router.push('/dashboard')}
           inline

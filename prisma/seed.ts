@@ -22,7 +22,11 @@ async function main() {
     },
   })
 
-  await prisma.meal.deleteMany({ where: { userId: user.id } })
+  const existingMeals = await prisma.meal.count({ where: { userId: user.id } })
+  if (existingMeals > 0) {
+    console.log('✓ Seed skipped — data already exists')
+    return
+  }
 
   const seedMeals = [
     // Today

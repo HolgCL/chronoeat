@@ -49,7 +49,7 @@ export default function LoginPage() {
               required
               value={email}
               onChange={e => setEmail(e.target.value)}
-              placeholder="test@chronoeat.app"
+              placeholder="you@example.com"
               className="w-full rounded-lg bg-neutral-800 border border-neutral-700 px-3 py-2 text-sm text-neutral-100 placeholder:text-neutral-500 focus:outline-none focus:border-[#1D9E75]"
             />
           </div>
@@ -74,9 +74,6 @@ export default function LoginPage() {
             {loading ? 'Входим...' : 'Войти'}
           </button>
 
-          <p className="text-center text-xs text-neutral-500">
-            Демо: test@chronoeat.app / test1234
-          </p>
         </form>
       </div>
     </div>

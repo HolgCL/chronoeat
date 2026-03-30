@@ -165,7 +165,14 @@ export default function OnboardingPage() {
             </div>
 
             <button
-              onClick={() => router.push('/dashboard')}
+              onClick={async () => {
+                await fetch('/api/user', {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ chronotype }),
+                })
+                router.push('/dashboard')
+              }}
               className="w-full rounded-lg bg-[#1D9E75] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#178a64] transition-colors"
             >
               Начать отслеживание →
