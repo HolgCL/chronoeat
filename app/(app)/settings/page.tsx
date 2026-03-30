@@ -35,7 +35,7 @@ export default function SettingsPage() {
   }
 
   function handleMctqFinish() {
-    const ct = determineChronotype(answers)
+    const { chronotype: ct } = determineChronotype(Object.fromEntries(answers.map((v, i) => [i, v])))
     setChronotype(ct)
     setShowMctq(false)
   }

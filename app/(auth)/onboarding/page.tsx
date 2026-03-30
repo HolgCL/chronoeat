@@ -42,7 +42,7 @@ export default function OnboardingPage() {
   }
 
   function handleMctqSubmit() {
-    const ct = determineChronotype(answers)
+    const { chronotype: ct } = determineChronotype(Object.fromEntries(answers.map((v, i) => [i, v])))
     setChronotype(ct)
     setStep('result')
   }
