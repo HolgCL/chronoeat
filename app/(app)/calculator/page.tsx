@@ -1,15 +1,17 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
-import { CheckCircle } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { CheckCircle, Pencil, X } from 'lucide-react'
 
 type Gender = 'male' | 'female'
 type Goal = 'lose' | 'maintain' | 'gain'
 
-const GOALS: { value: Goal; label: string; desc: string; calorieAdj: number; proteinMult: number }[] = [
-  { value: 'lose',     label: '🔥 Похудеть',        desc: 'Дефицит −20%, высокий белок',     calorieAdj: -0.20, proteinMult: 2.2 },
-  { value: 'maintain', label: '⚖️ Поддерживать вес', desc: 'Поддержание, баланс макросов',    calorieAdj:  0,    proteinMult: 2.0 },
-  { value: 'gain',     label: '💪 Набрать мышцы',   desc: 'Профицит +15%, акцент на белок',  calorieAdj: +0.15, proteinMult: 2.4 },
-]
+const KCAL_PER_KG = 7700 // ккал в 1 кг жира/мышц
+
+const GOAL_META: Record<Goal, { label: string; proteinMult: number }> = {
+  lose:     { label: '🔥 Похудеть',        proteinMult: 2.2 },
+  maintain: { label: '⚖️ Поддерживать вес', proteinMult: 2.0 },
+  gain:     { label: '💪 Набрать мышцы',   proteinMult: 2.4 },
+}
 
 const STEPS_LEVELS = [
   { label: 'Малоподвижный',    range: '< 3 000',      min: 0,     max: 2999,  multiplier: 1.2   },
@@ -29,18 +31,31 @@ function calcBMR(gender: Gender, weight: number, height: number, age: number) {
   return gender === 'male' ? base + 5 : base - 161
 }
 
-interface Macros { tdee: number; calories: number; protein: number; fat: number; carbs: number }
+interface Macros { tdee: number; calories: number; protein: number; fat: number; carbs: number; dailyDelta: number }
 
-function calcMacros(gender: Gender, weight: number, height: number, age: number, steps: number, goal: Goal): Macros {
-  const bmr      = calcBMR(gender, weight, height, age)
-  const activity = getActivityLevel(steps)
-  const tdee     = Math.round(bmr * activity.multiplier)
-  const goalDef  = GOALS.find(g => g.value === goal)!
-  const calories = Math.round(tdee * (1 + goalDef.calorieAdj))
-  const protein  = Math.round(weight * goalDef.proteinMult)
+function calcMacros(
+  gender: Gender, weight: number, height: number, age: number, steps: number,
+  goal: Goal, targetKg: number, weeks: number,
+): Macros {
+  const bmr        = calcBMR(gender, weight, height, age)
+  const activity   = getActivityLevel(steps)
+  const tdee       = Math.round(bmr * activity.multiplier)
+  const meta       = GOAL_META[goal]
+
+  // Daily kcal delta from target (0 for maintain)
+  const dailyDelta = goal === 'maintain' ? 0
+    : Math.round((targetKg * KCAL_PER_KG) / (weeks * 7)) * (goal === 'lose' ? -1 : 1)
+
+  // Safety cap: deficit ≤ 1000 kcal/day, surplus ≤ 500 kcal/day
+  const cappedDelta = goal === 'lose'
+    ? Math.max(dailyDelta, -1000)
+    : Math.min(dailyDelta, 500)
+
+  const calories = Math.max(1200, tdee + cappedDelta)
+  const protein  = Math.round(weight * meta.proteinMult)
   const fat      = Math.round((calories * 0.28) / 9)
   const carbs    = Math.max(0, Math.round((calories - protein * 4 - fat * 9) / 4))
-  return { tdee, calories, protein, fat, carbs }
+  return { tdee, calories, protein, fat, carbs, dailyDelta: cappedDelta }
 }
 
 export default function CalculatorPage() {
@@ -50,6 +65,12 @@ export default function CalculatorPage() {
   const [height, setHeight]     = useState(175)
   const [steps, setSteps]       = useState(7000)
   const [goal, setGoal]         = useState<Goal>('maintain')
+  const [editingGoal, setEditingGoal] = useState<Goal | null>(null)
+  // per-goal targets: { kg, weeks }
+  const [targets, setTargets]   = useState<Record<'lose' | 'gain', { kg: number; weeks: number }>>({
+    lose: { kg: 3, weeks: 8 },
+    gain: { kg: 2, weeks: 8 },
+  })
   const [saved, setSaved]       = useState(false)
   const [loading, setLoading]   = useState(false)
 
@@ -65,7 +86,8 @@ export default function CalculatorPage() {
   }, [])
 
   const valid  = age > 0 && weight > 0 && height > 0
-  const macros = valid ? calcMacros(gender, weight, height, age, steps, goal) : null
+  const currentTarget = goal !== 'maintain' ? targets[goal as 'lose' | 'gain'] : { kg: 0, weeks: 1 }
+  const macros = valid ? calcMacros(gender, weight, height, age, steps, goal, currentTarget.kg, currentTarget.weeks) : null
   const activity = getActivityLevel(steps)
 
   async function handleSave() {
@@ -188,22 +210,78 @@ export default function CalculatorPage() {
       <div className="rounded-xl bg-neutral-900 border border-neutral-800 p-4 space-y-3">
         <h2 className="text-sm font-semibold text-neutral-300">Цель</h2>
         <div className="grid grid-cols-1 gap-2">
-          {GOALS.map(g => (
-            <button
-              key={g.value}
-              onClick={() => setGoal(g.value)}
-              className={`flex items-center justify-between rounded-xl px-4 py-3 border text-left transition-colors ${
-                goal === g.value
-                  ? 'border-[#1D9E75] bg-[#1D9E75]/10'
-                  : 'border-neutral-700 hover:border-neutral-500'
-              }`}
-            >
-              <span className={`text-sm font-medium ${goal === g.value ? 'text-[#1D9E75]' : 'text-neutral-200'}`}>
-                {g.label}
-              </span>
-              <span className="text-xs text-neutral-500">{g.desc}</span>
-            </button>
-          ))}
+          {(['lose', 'maintain', 'gain'] as Goal[]).map(g => {
+            const meta = GOAL_META[g]
+            const t = g !== 'maintain' ? targets[g as 'lose' | 'gain'] : null
+            const isActive = goal === g
+            const isEditing = editingGoal === g
+            return (
+              <div
+                key={g}
+                className={`rounded-xl border transition-colors ${
+                  isActive ? 'border-[#1D9E75] bg-[#1D9E75]/10' : 'border-neutral-700'
+                }`}
+              >
+                {/* Row */}
+                <div className="flex items-center gap-2 px-4 py-3">
+                  <button className="flex-1 text-left" onClick={() => setGoal(g)}>
+                    <span className={`text-sm font-medium ${isActive ? 'text-[#1D9E75]' : 'text-neutral-200'}`}>
+                      {meta.label}
+                    </span>
+                    {t && (
+                      <span className="ml-2 text-xs text-neutral-500">
+                        {g === 'lose' ? '−' : '+'}{t.kg} кг за {t.weeks} нед.
+                      </span>
+                    )}
+                  </button>
+                  {g !== 'maintain' && (
+                    <button
+                      onClick={() => setEditingGoal(isEditing ? null : g)}
+                      className="rounded-lg p-1.5 text-neutral-500 hover:text-neutral-200 hover:bg-neutral-700/50 transition-colors"
+                    >
+                      {isEditing ? <X size={13} /> : <Pencil size={13} />}
+                    </button>
+                  )}
+                </div>
+
+                {/* Inline editor */}
+                {isEditing && t && (
+                  <div className="px-4 pb-3 space-y-2 border-t border-neutral-700/50 pt-3">
+                    <p className="text-xs text-neutral-500">
+                      {g === 'lose' ? 'Похудеть на' : 'Набрать'}
+                    </p>
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text" inputMode="decimal" value={t.kg}
+                          onChange={e => {
+                            const n = parseFloat(e.target.value.replace(/[^\d.]/g,''))
+                            if (!isNaN(n)) setTargets(prev => ({ ...prev, [g]: { ...prev[g as 'lose'|'gain'], kg: n } }))
+                          }}
+                          onFocus={e => e.target.select()}
+                          className="w-16 rounded-lg border border-neutral-700 bg-neutral-800 px-2 py-1.5 text-sm text-neutral-100 outline-none focus:border-[#1D9E75] text-center"
+                        />
+                        <span className="text-xs text-neutral-400">кг</span>
+                      </div>
+                      <span className="text-xs text-neutral-500">за</span>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text" inputMode="numeric" value={t.weeks}
+                          onChange={e => {
+                            const n = parseInt(e.target.value.replace(/\D/g,''), 10)
+                            if (!isNaN(n) && n > 0) setTargets(prev => ({ ...prev, [g]: { ...prev[g as 'lose'|'gain'], weeks: n } }))
+                          }}
+                          onFocus={e => e.target.select()}
+                          className="w-16 rounded-lg border border-neutral-700 bg-neutral-800 px-2 py-1.5 text-sm text-neutral-100 outline-none focus:border-[#1D9E75] text-center"
+                        />
+                        <span className="text-xs text-neutral-400">нед.</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       </div>
 
@@ -212,12 +290,14 @@ export default function CalculatorPage() {
         <div className="rounded-xl bg-neutral-900 border border-neutral-800 p-4 space-y-4">
           <div className="flex items-baseline justify-between">
             <h2 className="text-sm font-semibold text-neutral-300">Рекомендуемое КБЖУ на день</h2>
-            {goal !== 'maintain' && (
-              <span className="text-xs text-neutral-500">
-                TDEE: {macros.tdee} ккал
-                {goal === 'lose' ? ' → −20%' : ' → +15%'}
-              </span>
-            )}
+            <span className="text-xs text-neutral-500">
+              TDEE: {macros.tdee} ккал
+              {macros.dailyDelta !== 0 && (
+                <span style={{ color: macros.dailyDelta < 0 ? '#E24B4A' : '#1D9E75' }}>
+                  {' '}{macros.dailyDelta > 0 ? '+' : ''}{macros.dailyDelta}
+                </span>
+              )}
+            </span>
           </div>
 
           <div className="grid grid-cols-4 gap-2">
@@ -250,10 +330,14 @@ export default function CalculatorPage() {
           </div>
 
           <div className="rounded-lg bg-neutral-800 p-3 text-xs text-neutral-400 space-y-1">
-            {goal === 'lose'     && <p>• Дефицит 20% от TDEE — безопасное похудение ~0.5–1 кг/нед</p>}
-            {goal === 'gain'     && <p>• Профицит 15% от TDEE — рост мышц с минимальным жиром</p>}
+            {goal === 'lose' && currentTarget.kg > 0 && (
+              <p>• Темп: −{(currentTarget.kg / currentTarget.weeks).toFixed(1)} кг/нед — {(currentTarget.kg / currentTarget.weeks) <= 1 ? 'безопасно ✓' : 'агрессивно, следи за самочувствием'}</p>
+            )}
+            {goal === 'gain' && currentTarget.kg > 0 && (
+              <p>• Темп: +{(currentTarget.kg / currentTarget.weeks).toFixed(1)} кг/нед — {(currentTarget.kg / currentTarget.weeks) <= 0.5 ? 'реалистично ✓' : 'часть может быть жир'}</p>
+            )}
             {goal === 'maintain' && <p>• Калории равны расходу — поддержание текущего веса</p>}
-            <p>• Белок: {GOALS.find(g => g.value === goal)!.proteinMult} г/кг — {goal === 'lose' ? 'защита мышц при дефиците' : goal === 'gain' ? 'строительный материал для мышц' : 'поддержание мышечной массы'}</p>
+            <p>• Белок: {GOAL_META[goal].proteinMult} г/кг — {goal === 'lose' ? 'защита мышц при дефиците' : goal === 'gain' ? 'строительный материал для мышц' : 'поддержание мышечной массы'}</p>
             <p>• Жиры: 28% от калорий — гормональный баланс</p>
           </div>
 

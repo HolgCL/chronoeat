@@ -1,5 +1,7 @@
 'use client'
 import { create } from 'zustand'
+import type { Lang } from '@/lib/translations'
+import t from '@/lib/translations'
 
 export interface MealEntry {
   id: string
