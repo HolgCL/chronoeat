@@ -25,6 +25,9 @@ const MEAL_TYPES: { value: MealType; label: string }[] = [
 ]
 
 export default function MealLogger({ onSave, onClose, inline, initialMeal }: Props) {
+  // Parse numeric input: strips leading zeros, falls back to 0 if empty
+  const parseNum = (v: string) => { const n = parseInt(v.replace(/\D/g, ''), 10); return isNaN(n) ? 0 : n }
+
   const [food, setFood]         = useState<FoodPortion | null>(null)
   const [grams, setGrams]       = useState(100)
   const [mealType, setMealType] = useState<MealType>(initialMeal?.mealType as MealType ?? 'lunch')
@@ -114,8 +117,9 @@ export default function MealLogger({ onSave, onClose, inline, initialMeal }: Pro
               <div key={label} className="flex items-center gap-3">
                 <label className="text-sm text-neutral-400 w-20 shrink-0">{label}</label>
                 <input
-                  type="number" min={0} value={value}
-                  onChange={e => set(Number(e.target.value))}
+                  type="text" inputMode="numeric" value={value}
+                  onChange={e => set(parseNum(e.target.value))}
+                  onFocus={e => e.target.select()}
                   className="w-24 rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm text-neutral-100 outline-none"
                 />
               </div>
@@ -133,8 +137,9 @@ export default function MealLogger({ onSave, onClose, inline, initialMeal }: Pro
             <div className="flex items-center gap-3">
               <label className="text-sm text-neutral-400 w-20">Порция (г)</label>
               <input
-                type="number" min={1} max={2000} value={grams}
-                onChange={e => setGrams(Number(e.target.value))}
+                type="text" inputMode="numeric" value={grams}
+                onChange={e => setGrams(parseNum(e.target.value))}
+                onFocus={e => e.target.select()}
                 className="w-24 rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm text-neutral-100 outline-none"
               />
               {adjustedFood && (

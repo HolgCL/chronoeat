@@ -75,6 +75,12 @@ export default function CalculatorPage() {
     setTimeout(() => setSaved(false), 2500)
   }
 
+  const parseNum = (v: string, float?: boolean) => {
+    const clean = v.replace(/[^\d.]/g, '')
+    const n = float ? parseFloat(clean) : parseInt(clean, 10)
+    return isNaN(n) ? 0 : n
+  }
+
   const inputCls = 'w-full rounded-xl border border-neutral-700 bg-neutral-800 px-4 py-2.5 text-sm text-neutral-100 outline-none focus:border-[#1D9E75] transition-colors'
 
   return (
@@ -109,20 +115,20 @@ export default function CalculatorPage() {
         <div className="grid grid-cols-3 gap-3">
           <div className="space-y-1.5">
             <label className="text-xs text-neutral-500">Возраст (лет)</label>
-            <input type="number" min={10} max={100} value={age}
-              onChange={e => setAge(Number(e.target.value))}
+            <input type="text" inputMode="numeric" value={age}
+              onChange={e => setAge(parseNum(e.target.value))}
               onFocus={e => e.target.select()} className={inputCls} />
           </div>
           <div className="space-y-1.5">
             <label className="text-xs text-neutral-500">Вес (кг)</label>
-            <input type="number" min={30} max={300} step={0.5} value={weight}
-              onChange={e => setWeight(Number(e.target.value))}
+            <input type="text" inputMode="decimal" value={weight}
+              onChange={e => setWeight(parseNum(e.target.value, true))}
               onFocus={e => e.target.select()} className={inputCls} />
           </div>
           <div className="space-y-1.5">
             <label className="text-xs text-neutral-500">Рост (см)</label>
-            <input type="number" min={100} max={250} value={height}
-              onChange={e => setHeight(Number(e.target.value))}
+            <input type="text" inputMode="numeric" value={height}
+              onChange={e => setHeight(parseNum(e.target.value))}
               onFocus={e => e.target.select()} className={inputCls} />
           </div>
         </div>
