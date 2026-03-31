@@ -17,6 +17,12 @@ model User {
   sleepTime    Float       @default(23.0)
   calorieGoal  Int         @default(2000)
   proteinGoal        Int         @default(150)
+  // Body params for TDEE calculator
+  gender             String?
+  age                Int?
+  weight             Float?
+  height             Float?
+  dailySteps         Int?
   aiAdviceCache      String?
   aiAdviceCachedAt   DateTime?
   createdAt          DateTime    @default(now())
