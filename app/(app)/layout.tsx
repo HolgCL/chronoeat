@@ -1,13 +1,11 @@
 import { redirect } from 'next/navigation'
 import { auth } from '@/auth'
 import Link from 'next/link'
-import { LayoutDashboard, UtensilsCrossed, BarChart3, Settings } from 'lucide-react'
+import { LayoutDashboard, Settings } from 'lucide-react'
 
 const NAV = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Сегодня' },
-  { href: '/log',        icon: UtensilsCrossed, label: 'Добавить' },
-  { href: '/analytics',  icon: BarChart3,       label: 'Аналитика' },
-  { href: '/settings',   icon: Settings,        label: 'Настройки' },
+  { href: '/settings',  icon: Settings,        label: 'Настройки' },
 ]
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
