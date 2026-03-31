@@ -110,10 +110,10 @@ export function getEatingWindow(chronotype: Chronotype): { start: number; end: n
   return { start: 8 + offset, end: 18 + offset }
 }
 
-/** Typical sleep schedule derived from chronotype. */
+/** Typical sleep schedule derived from chronotype. Hours wrapped to [0, 24). */
 export function getSleepSchedule(chronotype: Chronotype): { wakeUp: number; bedtime: number } {
   const offset = CHRONOTYPE_OFFSET[chronotype]
-  return { wakeUp: 7 + offset, bedtime: 23 + offset }
+  return { wakeUp: (7 + offset) % 24, bedtime: (23 + offset) % 24 }
 }
 
 /** Meal-type bonus: breakfast and lunch are metabolically favoured */

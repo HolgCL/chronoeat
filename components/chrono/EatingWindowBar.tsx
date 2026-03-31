@@ -94,16 +94,17 @@ export default function EatingWindowBar({ chronotype, firstMealHour, lastMealHou
 
         <div className="relative h-7 rounded-full bg-neutral-800/80 overflow-hidden">
 
-          {/* Sleep zone: 00:00 → wakeUpTime */}
-          <div
-            className="absolute top-0 h-full"
-            style={{ left: 0, width: wpct(wakeUpTime), backgroundColor: '#7F77DD', opacity: 0.15 }}
-          />
-          {/* Sleep zone: sleepTime → 24:00 */}
-          <div
-            className="absolute top-0 h-full"
-            style={{ left: pct(sleepTime), width: wpct(DAY - sleepTime), backgroundColor: '#7F77DD', opacity: 0.15 }}
-          />
+          {/* Sleep zones — two cases:
+              normal (bedtime > wakeUp, e.g. 23→7): zones at [0, wakeUp] and [bedtime, 24]
+              wrapped (bedtime < wakeUp, e.g. 2→10): single zone [bedtime, wakeUp] */}
+          {sleepTime > wakeUpTime ? (
+            <>
+              <div className="absolute top-0 h-full" style={{ left: 0, width: wpct(wakeUpTime), backgroundColor: '#7F77DD', opacity: 0.15 }} />
+              <div className="absolute top-0 h-full" style={{ left: pct(sleepTime), width: wpct(DAY - sleepTime), backgroundColor: '#7F77DD', opacity: 0.15 }} />
+            </>
+          ) : (
+            <div className="absolute top-0 h-full" style={{ left: pct(sleepTime), width: wpct(wakeUpTime - sleepTime), backgroundColor: '#7F77DD', opacity: 0.15 }} />
+          )}
 
           {/* Optimal eating window */}
           <div
@@ -149,21 +150,25 @@ export default function EatingWindowBar({ chronotype, firstMealHour, lastMealHou
             />
           )}
 
-          {/* Sleep zone labels */}
-          {wakeUpTime > 0.5 && (
-            <div
-              className="absolute top-0 h-full flex items-center justify-center"
-              style={{ left: 0, width: wpct(wakeUpTime) }}
-            >
+          {/* Sleep zone emoji labels */}
+          {sleepTime > wakeUpTime ? (
+            <>
+              {wakeUpTime > 0.5 && (
+                <div className="absolute top-0 h-full flex items-center justify-center" style={{ left: 0, width: wpct(wakeUpTime) }}>
+                  <span className="text-[9px] text-[#7F77DD] opacity-80 select-none">😴</span>
+                </div>
+              )}
+              {DAY - sleepTime > 0.5 && (
+                <div className="absolute top-0 h-full flex items-center justify-center" style={{ left: pct(sleepTime), width: wpct(DAY - sleepTime) }}>
+                  <span className="text-[9px] text-[#7F77DD] opacity-80 select-none">😴</span>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="absolute top-0 h-full flex items-center justify-center" style={{ left: pct(sleepTime), width: wpct(wakeUpTime - sleepTime) }}>
               <span className="text-[9px] text-[#7F77DD] opacity-80 select-none">😴</span>
             </div>
           )}
-          <div
-            className="absolute top-0 h-full flex items-center justify-center"
-            style={{ left: pct(sleepTime), width: wpct(DAY - sleepTime) }}
-          >
-            <span className="text-[9px] text-[#7F77DD] opacity-80 select-none">😴</span>
-          </div>
 
           {/* Current time marker */}
           <div
@@ -180,7 +185,7 @@ export default function EatingWindowBar({ chronotype, firstMealHour, lastMealHou
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-neutral-600 pt-0.5">
           <span className="flex items-center gap-1">
             <span className="inline-block h-2 w-4 rounded-full" style={{ backgroundColor: '#7F77DD', opacity: 0.4 }} />
-            Сон ({fmt(sleepTime)}–{fmt(wakeUpTime)})
+            Сон ({fmt(sleepTime > wakeUpTime ? sleepTime : sleepTime)}–{fmt(wakeUpTime)})
           </span>
           <span className="flex items-center gap-1">
             <span className="inline-block h-2 w-4 rounded-full" style={{ backgroundColor: ZONE_COLORS.green, opacity: 0.4 }} />
