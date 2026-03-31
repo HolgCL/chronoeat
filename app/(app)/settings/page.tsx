@@ -170,8 +170,9 @@ export default function SettingsPage() {
         <div className="flex items-center gap-2">
           <label className="text-xs text-neutral-500">Свое значение:</label>
           <input
-            type="number" min={800} max={5000} value={calorieGoal}
-            onChange={e => setCalorieGoal(Number(e.target.value))}
+            type="text" inputMode="numeric" value={calorieGoal}
+            onChange={e => { const n = parseInt(e.target.value.replace(/\D/g,''),10); if (!isNaN(n)) setCalorieGoal(n) }}
+            onFocus={e => e.target.select()}
             className="w-24 rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-1.5 text-sm text-neutral-100 outline-none"
           />
           <span className="text-xs text-neutral-500">ккал/день</span>
@@ -184,8 +185,9 @@ export default function SettingsPage() {
         <div className="flex items-center gap-2">
           <label className="text-xs text-neutral-500">Граммов в день:</label>
           <input
-            type="number" min={30} max={400} value={proteinGoal}
-            onChange={e => setProteinGoal(Number(e.target.value))}
+            type="text" inputMode="numeric" value={proteinGoal}
+            onChange={e => { const n = parseInt(e.target.value.replace(/\D/g,''),10); if (!isNaN(n)) setProteinGoal(n) }}
+            onFocus={e => e.target.select()}
             className="w-24 rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-1.5 text-sm text-neutral-100 outline-none"
           />
           <span className="text-xs text-neutral-500">г/день</span>
