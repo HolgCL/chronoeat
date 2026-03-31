@@ -17,7 +17,7 @@ const t = {
       noMeals: 'Нет приёмов пищи',
       hormoneCurves: 'Гормональные кривые дня',
       kcal: 'ккал',
-      protein: 'белок г',
+      protein: 'грамм белка',
     },
 
     // Meal types
