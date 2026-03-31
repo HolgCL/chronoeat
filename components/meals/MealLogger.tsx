@@ -5,7 +5,7 @@ import { X } from 'lucide-react'
 import FoodSearch from './FoodSearch'
 import type { FoodPortion } from '@/lib/food-search'
 import type { MealType } from '@/lib/chrono'
-import type { MealEntry } from '@/store/useAppStore'
+import { useAppStore, t, type MealEntry } from '@/store/useAppStore'
 
 interface Props {
   onSave: (meal: {
@@ -17,14 +17,17 @@ interface Props {
   initialMeal?: MealEntry
 }
 
-const MEAL_TYPES: { value: MealType; label: string }[] = [
-  { value: 'breakfast', label: 'Завтрак' },
-  { value: 'lunch',     label: 'Обед' },
-  { value: 'snack',     label: 'Перекус' },
-  { value: 'dinner',    label: 'Ужин' },
-]
-
 export default function MealLogger({ onSave, onClose, inline, initialMeal }: Props) {
+  const { lang } = useAppStore()
+  const tr = t[lang]
+
+  const MEAL_TYPES: { value: MealType; label: string }[] = [
+    { value: 'breakfast', label: tr.mealTypes.breakfast },
+    { value: 'lunch',     label: tr.mealTypes.lunch },
+    { value: 'snack',     label: tr.mealTypes.snack },
+    { value: 'dinner',    label: tr.mealTypes.dinner },
+  ]
+
   // Parse numeric input: strips leading zeros, falls back to 0 if empty
   const parseNum = (v: string) => { const n = parseInt(v.replace(/\D/g, ''), 10); return isNaN(n) ? 0 : n }
 
@@ -91,7 +94,7 @@ export default function MealLogger({ onSave, onClose, inline, initialMeal }: Pro
     <div className={`w-full ${inline ? '' : 'max-w-md rounded-t-2xl sm:rounded-2xl'} bg-neutral-900 border border-neutral-700 p-5 space-y-4`}>
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-neutral-100">
-            {initialMeal ? 'Редактировать приём пищи' : 'Добавить приём пищи'}
+            {initialMeal ? tr.logger.editTitle : tr.logger.addTitle}
           </h2>
           <button onClick={onClose} className="text-neutral-400 hover:text-neutral-100"><X size={20} /></button>
         </div>
@@ -101,7 +104,7 @@ export default function MealLogger({ onSave, onClose, inline, initialMeal }: Pro
           /* Manual edit fields */
           <div className="space-y-3">
             <div className="flex items-center gap-3">
-              <label className="text-sm text-neutral-400 w-20">Название</label>
+              <label className="text-sm text-neutral-400 w-20">{tr.logger.name}</label>
               <input
                 value={manualName}
                 onChange={e => setManualName(e.target.value)}
@@ -109,10 +112,10 @@ export default function MealLogger({ onSave, onClose, inline, initialMeal }: Pro
               />
             </div>
             {[
-              { label: 'Калории', value: manualCalories, set: setManualCalories },
-              { label: 'Белок (г)', value: manualProtein, set: setManualProtein },
-              { label: 'Углеводы (г)', value: manualCarbs, set: setManualCarbs },
-              { label: 'Жиры (г)', value: manualFat, set: setManualFat },
+              { label: tr.logger.calories,  value: manualCalories, set: setManualCalories },
+              { label: tr.logger.proteinG,  value: manualProtein,  set: setManualProtein },
+              { label: tr.logger.carbsG,    value: manualCarbs,    set: setManualCarbs },
+              { label: tr.logger.fatG,      value: manualFat,      set: setManualFat },
             ].map(({ label, value, set }) => (
               <div key={label} className="flex items-center gap-3">
                 <label className="text-sm text-neutral-400 w-20 shrink-0">{label}</label>
@@ -126,7 +129,7 @@ export default function MealLogger({ onSave, onClose, inline, initialMeal }: Pro
             ))}
             {!initialMeal && (
               <button onClick={() => setManualMode(false)} className="text-xs text-[#1D9E75] hover:underline">
-                Поиск по базе продуктов
+                {tr.logger.searchDb}
               </button>
             )}
           </div>
@@ -135,7 +138,7 @@ export default function MealLogger({ onSave, onClose, inline, initialMeal }: Pro
           <div className="space-y-3">
             <FoodSearch onSelect={setFood} grams={grams} />
             <div className="flex items-center gap-3">
-              <label className="text-sm text-neutral-400 w-20">Порция (г)</label>
+              <label className="text-sm text-neutral-400 w-20">{tr.logger.portion}</label>
               <input
                 type="text" inputMode="numeric" value={grams}
                 onChange={e => setGrams(parseNum(e.target.value))}
@@ -143,11 +146,11 @@ export default function MealLogger({ onSave, onClose, inline, initialMeal }: Pro
                 className="w-24 rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm text-neutral-100 outline-none"
               />
               {adjustedFood && (
-                <span className="text-xs text-neutral-400">{adjustedFood.calories} ккал</span>
+                <span className="text-xs text-neutral-400">{adjustedFood.calories} {tr.dash.kcal}</span>
               )}
             </div>
             <button onClick={() => setManualMode(true)} className="text-xs text-neutral-500 hover:text-neutral-300">
-              Ввести вручную
+              {tr.logger.manualEntry}
             </button>
           </div>
         )}
@@ -167,7 +170,7 @@ export default function MealLogger({ onSave, onClose, inline, initialMeal }: Pro
 
         {/* Time */}
         <div className="flex items-center gap-3">
-          <label className="text-sm text-neutral-400 w-20">Время</label>
+          <label className="text-sm text-neutral-400 w-20">{tr.logger.time}</label>
           <input
             type="time" value={time}
             onChange={e => setTime(e.target.value)}
@@ -180,7 +183,7 @@ export default function MealLogger({ onSave, onClose, inline, initialMeal }: Pro
           disabled={!canSave || saving}
           className="w-full rounded-xl bg-[#1D9E75] py-3 text-sm font-semibold text-white transition-opacity disabled:opacity-40 hover:opacity-90"
         >
-          {saving ? 'Сохраняем...' : initialMeal ? 'Сохранить изменения' : 'Сохранить'}
+          {saving ? tr.logger.saving : initialMeal ? tr.logger.saveChanges : tr.logger.save}
         </button>
       </div>
   )

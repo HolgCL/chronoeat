@@ -1,28 +1,17 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { CheckCircle, Pencil, X } from 'lucide-react'
+import { useAppStore, t } from '@/store/useAppStore'
 
 type Gender = 'male' | 'female'
 type Goal = 'lose' | 'maintain' | 'gain'
 
-const KCAL_PER_KG = 7700 // ккал в 1 кг жира/мышц
+const KCAL_PER_KG = 7700 // kcal per kg
 
-const GOAL_META: Record<Goal, { label: string; proteinMult: number }> = {
-  lose:     { label: '🔥 Похудеть',        proteinMult: 2.2 },
-  maintain: { label: '⚖️ Поддерживать вес', proteinMult: 2.0 },
-  gain:     { label: '💪 Набрать мышцы',   proteinMult: 2.4 },
-}
+type StepsLevel = { label: string; range: string; min: number; max: number; multiplier: number }
 
-const STEPS_LEVELS = [
-  { label: 'Малоподвижный',    range: '< 3 000',      min: 0,     max: 2999,  multiplier: 1.2   },
-  { label: 'Слабо активный',   range: '3 000–7 000',  min: 3000,  max: 6999,  multiplier: 1.375 },
-  { label: 'Умеренно активный',range: '7 000–10 000', min: 7000,  max: 9999,  multiplier: 1.55  },
-  { label: 'Активный',         range: '10 000–15 000',min: 10000, max: 14999, multiplier: 1.725 },
-  { label: 'Очень активный',   range: '> 15 000',     min: 15000, max: Infinity, multiplier: 1.9 },
-]
-
-function getActivityLevel(steps: number) {
-  return STEPS_LEVELS.find(l => steps >= l.min && steps <= l.max) ?? STEPS_LEVELS[0]
+function getActivityLevel(steps: number, levels: StepsLevel[]) {
+  return levels.find(l => steps >= l.min && steps <= l.max) ?? levels[0]
 }
 
 /** Mifflin-St Jeor BMR */
@@ -36,11 +25,12 @@ interface Macros { tdee: number; calories: number; protein: number; fat: number;
 function calcMacros(
   gender: Gender, weight: number, height: number, age: number, steps: number,
   goal: Goal, targetKg: number, weeks: number,
+  levels: StepsLevel[], goalMeta: Record<Goal, { label: string; proteinMult: number }>,
 ): Macros {
   const bmr        = calcBMR(gender, weight, height, age)
-  const activity   = getActivityLevel(steps)
+  const activity   = getActivityLevel(steps, levels)
   const tdee       = Math.round(bmr * activity.multiplier)
-  const meta       = GOAL_META[goal]
+  const meta       = goalMeta[goal]
 
   // Daily kcal delta from target (0 for maintain)
   const dailyDelta = goal === 'maintain' ? 0
@@ -59,6 +49,23 @@ function calcMacros(
 }
 
 export default function CalculatorPage() {
+  const { lang } = useAppStore()
+  const tr = t[lang]
+
+  const GOAL_META: Record<Goal, { label: string; proteinMult: number }> = {
+    lose:     { label: `🔥 ${lang === 'ru' ? 'Похудеть' : 'Lose weight'}`,         proteinMult: 2.2 },
+    maintain: { label: `⚖️ ${lang === 'ru' ? 'Поддерживать вес' : 'Maintain weight'}`, proteinMult: 2.0 },
+    gain:     { label: `💪 ${lang === 'ru' ? 'Набрать мышцы' : 'Build muscle'}`,   proteinMult: 2.4 },
+  }
+
+  const STEPS_LEVELS = [
+    { label: tr.calc.levels.sedentary,  range: '< 3 000',      min: 0,     max: 2999,  multiplier: 1.2   },
+    { label: tr.calc.levels.light,      range: '3 000–7 000',  min: 3000,  max: 6999,  multiplier: 1.375 },
+    { label: tr.calc.levels.moderate,   range: '7 000–10 000', min: 7000,  max: 9999,  multiplier: 1.55  },
+    { label: tr.calc.levels.active,     range: '10 000–15 000',min: 10000, max: 14999, multiplier: 1.725 },
+    { label: tr.calc.levels.veryActive, range: '> 15 000',     min: 15000, max: Infinity, multiplier: 1.9 },
+  ]
+
   const [gender, setGender]     = useState<Gender>('male')
   const [age, setAge]           = useState(25)
   const [weight, setWeight]     = useState(75)
@@ -87,8 +94,8 @@ export default function CalculatorPage() {
 
   const valid  = age > 0 && weight > 0 && height > 0
   const currentTarget = goal !== 'maintain' ? targets[goal as 'lose' | 'gain'] : { kg: 0, weeks: 1 }
-  const macros = valid ? calcMacros(gender, weight, height, age, steps, goal, currentTarget.kg, currentTarget.weeks) : null
-  const activity = getActivityLevel(steps)
+  const macros = valid ? calcMacros(gender, weight, height, age, steps, goal, currentTarget.kg, currentTarget.weeks, STEPS_LEVELS, GOAL_META) : null
+  const activity = getActivityLevel(steps, STEPS_LEVELS)
 
   async function handleSave() {
     if (!macros) return
@@ -115,17 +122,20 @@ export default function CalculatorPage() {
 
   const inputCls = 'w-full rounded-xl border border-neutral-700 bg-neutral-800 px-4 py-2.5 text-sm text-neutral-100 outline-none focus:border-[#1D9E75] transition-colors'
 
+  const kgLabel  = lang === 'ru' ? 'кг' : 'kg'
+  const wksLabel = lang === 'ru' ? 'нед.' : 'wks'
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
       <div>
-        <p className="text-xs text-neutral-500 uppercase tracking-wide">Питание</p>
-        <h1 className="text-2xl font-bold text-neutral-100">Калькулятор КБЖУ</h1>
-        <p className="text-xs text-neutral-500 mt-1">Расчёт по формуле Миффлина–Сан Жеора с учётом активности</p>
+        <p className="text-xs text-neutral-500 uppercase tracking-wide">{tr.calc.nutrition}</p>
+        <h1 className="text-2xl font-bold text-neutral-100">{tr.calc.title}</h1>
+        <p className="text-xs text-neutral-500 mt-1">{tr.calc.subtitle}</p>
       </div>
 
       {/* Body params */}
       <div className="rounded-xl bg-neutral-900 border border-neutral-800 p-4 space-y-4">
-        <h2 className="text-sm font-semibold text-neutral-300">Параметры тела</h2>
+        <h2 className="text-sm font-semibold text-neutral-300">{tr.calc.bodyParams}</h2>
 
         {/* Gender */}
         <div className="flex gap-2">
@@ -139,26 +149,26 @@ export default function CalculatorPage() {
                   : 'border-neutral-700 text-neutral-400 hover:border-neutral-500'
               }`}
             >
-              {g === 'male' ? '♂ Мужчина' : '♀ Женщина'}
+              {g === 'male' ? tr.calc.male : tr.calc.female}
             </button>
           ))}
         </div>
 
         <div className="grid grid-cols-3 gap-3">
           <div className="space-y-1.5">
-            <label className="text-xs text-neutral-500">Возраст (лет)</label>
+            <label className="text-xs text-neutral-500">{tr.calc.age}</label>
             <input type="text" inputMode="numeric" value={age}
               onChange={e => setAge(parseNum(e.target.value))}
               onFocus={e => e.target.select()} className={inputCls} />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs text-neutral-500">Вес (кг)</label>
+            <label className="text-xs text-neutral-500">{tr.calc.weight}</label>
             <input type="text" inputMode="decimal" value={weight}
               onChange={e => setWeight(parseNum(e.target.value, true))}
               onFocus={e => e.target.select()} className={inputCls} />
           </div>
           <div className="space-y-1.5">
-            <label className="text-xs text-neutral-500">Рост (см)</label>
+            <label className="text-xs text-neutral-500">{tr.calc.height}</label>
             <input type="text" inputMode="numeric" value={height}
               onChange={e => setHeight(parseNum(e.target.value))}
               onFocus={e => e.target.select()} className={inputCls} />
@@ -169,13 +179,13 @@ export default function CalculatorPage() {
       {/* Activity */}
       <div className="rounded-xl bg-neutral-900 border border-neutral-800 p-4 space-y-4">
         <div className="flex items-baseline justify-between">
-          <h2 className="text-sm font-semibold text-neutral-300">Активность</h2>
+          <h2 className="text-sm font-semibold text-neutral-300">{tr.calc.activity}</h2>
           <span className="text-xs text-[#1D9E75] font-medium">{activity.label}</span>
         </div>
 
         <div className="space-y-1.5">
           <div className="flex justify-between text-xs text-neutral-500">
-            <span>Шагов в день: <span className="text-neutral-200 font-medium">{steps.toLocaleString('ru')}</span></span>
+            <span>{tr.calc.stepsPerDay}: <span className="text-neutral-200 font-medium">{steps.toLocaleString()}</span></span>
             <span>{activity.range}</span>
           </div>
           <input
@@ -208,11 +218,11 @@ export default function CalculatorPage() {
 
       {/* Goal */}
       <div className="rounded-xl bg-neutral-900 border border-neutral-800 p-4 space-y-3">
-        <h2 className="text-sm font-semibold text-neutral-300">Цель</h2>
+        <h2 className="text-sm font-semibold text-neutral-300">{lang === 'ru' ? 'Цель' : 'Goal'}</h2>
         <div className="grid grid-cols-1 gap-2">
           {(['lose', 'maintain', 'gain'] as Goal[]).map(g => {
             const meta = GOAL_META[g]
-            const t = g !== 'maintain' ? targets[g as 'lose' | 'gain'] : null
+            const tgt = g !== 'maintain' ? targets[g as 'lose' | 'gain'] : null
             const isActive = goal === g
             const isEditing = editingGoal === g
             return (
@@ -228,9 +238,9 @@ export default function CalculatorPage() {
                     <span className={`text-sm font-medium ${isActive ? 'text-[#1D9E75]' : 'text-neutral-200'}`}>
                       {meta.label}
                     </span>
-                    {t && (
+                    {tgt && (
                       <span className="ml-2 text-xs text-neutral-500">
-                        {g === 'lose' ? '−' : '+'}{t.kg} кг за {t.weeks} нед.
+                        {g === 'lose' ? '−' : '+'}{tgt.kg} {kgLabel} / {tgt.weeks} {wksLabel}
                       </span>
                     )}
                   </button>
@@ -245,15 +255,17 @@ export default function CalculatorPage() {
                 </div>
 
                 {/* Inline editor */}
-                {isEditing && t && (
+                {isEditing && tgt && (
                   <div className="px-4 pb-3 space-y-2 border-t border-neutral-700/50 pt-3">
                     <p className="text-xs text-neutral-500">
-                      {g === 'lose' ? 'Похудеть на' : 'Набрать'}
+                      {g === 'lose'
+                        ? (lang === 'ru' ? 'Похудеть на' : 'Lose')
+                        : (lang === 'ru' ? 'Набрать' : 'Gain')}
                     </p>
                     <div className="flex items-center gap-3 flex-wrap">
                       <div className="flex items-center gap-2">
                         <input
-                          type="text" inputMode="decimal" value={t.kg}
+                          type="text" inputMode="decimal" value={tgt.kg}
                           onChange={e => {
                             const n = parseFloat(e.target.value.replace(/[^\d.]/g,''))
                             if (!isNaN(n)) setTargets(prev => ({ ...prev, [g]: { ...prev[g as 'lose'|'gain'], kg: n } }))
@@ -261,12 +273,12 @@ export default function CalculatorPage() {
                           onFocus={e => e.target.select()}
                           className="w-16 rounded-lg border border-neutral-700 bg-neutral-800 px-2 py-1.5 text-sm text-neutral-100 outline-none focus:border-[#1D9E75] text-center"
                         />
-                        <span className="text-xs text-neutral-400">кг</span>
+                        <span className="text-xs text-neutral-400">{kgLabel}</span>
                       </div>
-                      <span className="text-xs text-neutral-500">за</span>
+                      <span className="text-xs text-neutral-500">{lang === 'ru' ? 'за' : 'in'}</span>
                       <div className="flex items-center gap-2">
                         <input
-                          type="text" inputMode="numeric" value={t.weeks}
+                          type="text" inputMode="numeric" value={tgt.weeks}
                           onChange={e => {
                             const n = parseInt(e.target.value.replace(/\D/g,''), 10)
                             if (!isNaN(n) && n > 0) setTargets(prev => ({ ...prev, [g]: { ...prev[g as 'lose'|'gain'], weeks: n } }))
@@ -274,7 +286,7 @@ export default function CalculatorPage() {
                           onFocus={e => e.target.select()}
                           className="w-16 rounded-lg border border-neutral-700 bg-neutral-800 px-2 py-1.5 text-sm text-neutral-100 outline-none focus:border-[#1D9E75] text-center"
                         />
-                        <span className="text-xs text-neutral-400">нед.</span>
+                        <span className="text-xs text-neutral-400">{wksLabel}</span>
                       </div>
                     </div>
                   </div>
@@ -289,9 +301,9 @@ export default function CalculatorPage() {
       {macros && (
         <div className="rounded-xl bg-neutral-900 border border-neutral-800 p-4 space-y-4">
           <div className="flex items-baseline justify-between">
-            <h2 className="text-sm font-semibold text-neutral-300">Рекомендуемое КБЖУ на день</h2>
+            <h2 className="text-sm font-semibold text-neutral-300">{tr.calc.results}</h2>
             <span className="text-xs text-neutral-500">
-              TDEE: {macros.tdee} ккал
+              TDEE: {macros.tdee} {tr.calc.kcal}
               {macros.dailyDelta !== 0 && (
                 <span style={{ color: macros.dailyDelta < 0 ? '#E24B4A' : '#1D9E75' }}>
                   {' '}{macros.dailyDelta > 0 ? '+' : ''}{macros.dailyDelta}
@@ -302,10 +314,10 @@ export default function CalculatorPage() {
 
           <div className="grid grid-cols-4 gap-2">
             {[
-              { label: 'Калории',  value: macros.calories, unit: 'ккал', color: '#1D9E75' },
-              { label: 'Белки',    value: macros.protein,  unit: 'г',    color: '#EF9F27' },
-              { label: 'Жиры',     value: macros.fat,      unit: 'г',    color: '#E24B4A' },
-              { label: 'Углеводы', value: macros.carbs,    unit: 'г',    color: '#7F77DD' },
+              { label: tr.calc.calories, value: macros.calories, unit: tr.calc.kcal, color: '#1D9E75' },
+              { label: tr.calc.protein,  value: macros.protein,  unit: tr.calc.g,    color: '#EF9F27' },
+              { label: tr.calc.fat,      value: macros.fat,      unit: tr.calc.g,    color: '#E24B4A' },
+              { label: tr.calc.carbs,    value: macros.carbs,    unit: tr.calc.g,    color: '#7F77DD' },
             ].map(({ label, value, unit, color }) => (
               <div key={label} className="rounded-xl bg-neutral-800 p-3 text-center space-y-0.5">
                 <p className="text-[10px] text-neutral-500 uppercase tracking-wide">{label}</p>
@@ -323,22 +335,31 @@ export default function CalculatorPage() {
               <div style={{ width: `${(macros.carbs * 4 / macros.calories) * 100}%`, backgroundColor: '#7F77DD' }} />
             </div>
             <div className="flex justify-between text-[10px] text-neutral-600">
-              <span className="text-[#EF9F27]">Б {Math.round(macros.protein * 4 / macros.calories * 100)}%</span>
-              <span className="text-[#E24B4A]">Ж {Math.round(macros.fat * 9 / macros.calories * 100)}%</span>
-              <span className="text-[#7F77DD]">У {Math.round(macros.carbs * 4 / macros.calories * 100)}%</span>
+              <span className="text-[#EF9F27]">{lang === 'ru' ? 'Б' : 'P'} {Math.round(macros.protein * 4 / macros.calories * 100)}%</span>
+              <span className="text-[#E24B4A]">{lang === 'ru' ? 'Ж' : 'F'} {Math.round(macros.fat * 9 / macros.calories * 100)}%</span>
+              <span className="text-[#7F77DD]">{lang === 'ru' ? 'У' : 'C'} {Math.round(macros.carbs * 4 / macros.calories * 100)}%</span>
             </div>
           </div>
 
           <div className="rounded-lg bg-neutral-800 p-3 text-xs text-neutral-400 space-y-1">
             {goal === 'lose' && currentTarget.kg > 0 && (
-              <p>• Темп: −{(currentTarget.kg / currentTarget.weeks).toFixed(1)} кг/нед — {(currentTarget.kg / currentTarget.weeks) <= 1 ? 'безопасно ✓' : 'агрессивно, следи за самочувствием'}</p>
+              <p>• {lang === 'ru'
+                ? `Темп: −${(currentTarget.kg / currentTarget.weeks).toFixed(1)} кг/нед — ${(currentTarget.kg / currentTarget.weeks) <= 1 ? 'безопасно ✓' : 'агрессивно, следи за самочувствием'}`
+                : `Pace: −${(currentTarget.kg / currentTarget.weeks).toFixed(1)} kg/wk — ${(currentTarget.kg / currentTarget.weeks) <= 1 ? 'safe ✓' : 'aggressive, monitor how you feel'}`
+              }</p>
             )}
             {goal === 'gain' && currentTarget.kg > 0 && (
-              <p>• Темп: +{(currentTarget.kg / currentTarget.weeks).toFixed(1)} кг/нед — {(currentTarget.kg / currentTarget.weeks) <= 0.5 ? 'реалистично ✓' : 'часть может быть жир'}</p>
+              <p>• {lang === 'ru'
+                ? `Темп: +${(currentTarget.kg / currentTarget.weeks).toFixed(1)} кг/нед — ${(currentTarget.kg / currentTarget.weeks) <= 0.5 ? 'реалистично ✓' : 'часть может быть жир'}`
+                : `Pace: +${(currentTarget.kg / currentTarget.weeks).toFixed(1)} kg/wk — ${(currentTarget.kg / currentTarget.weeks) <= 0.5 ? 'realistic ✓' : 'some may be fat gain'}`
+              }</p>
             )}
-            {goal === 'maintain' && <p>• Калории равны расходу — поддержание текущего веса</p>}
-            <p>• Белок: {GOAL_META[goal].proteinMult} г/кг — {goal === 'lose' ? 'защита мышц при дефиците' : goal === 'gain' ? 'строительный материал для мышц' : 'поддержание мышечной массы'}</p>
-            <p>• Жиры: 28% от калорий — гормональный баланс</p>
+            {goal === 'maintain' && <p>• {lang === 'ru' ? 'Калории равны расходу — поддержание текущего веса' : 'Calories match expenditure — maintaining current weight'}</p>}
+            <p>• {lang === 'ru'
+              ? `Белок: ${GOAL_META[goal].proteinMult} г/кг — ${goal === 'lose' ? 'защита мышц при дефиците' : goal === 'gain' ? 'строительный материал для мышц' : 'поддержание мышечной массы'}`
+              : `Protein: ${GOAL_META[goal].proteinMult} g/kg — ${goal === 'lose' ? 'muscle preservation in deficit' : goal === 'gain' ? 'building blocks for muscle' : 'maintaining muscle mass'}`
+            }</p>
+            <p>• {lang === 'ru' ? 'Жиры: 28% от калорий — гормональный баланс' : 'Fat: 28% of calories — hormonal balance'}</p>
           </div>
 
           <button
@@ -347,12 +368,12 @@ export default function CalculatorPage() {
             className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#1D9E75] py-3 text-sm font-semibold text-white hover:bg-[#178a64] transition-colors disabled:opacity-60"
           >
             {saved
-              ? <><CheckCircle size={16} /> Сохранено как цель</>
-              : loading ? 'Сохраняем...' : 'Сохранить как цель питания'}
+              ? <><CheckCircle size={16} /> {tr.calc.savedGoal}</>
+              : loading ? tr.calc.saving : tr.calc.saveGoal}
           </button>
           {saved && (
             <p className="text-center text-xs text-neutral-500">
-              Цели обновлены на дашборде
+              {tr.calc.goalsUpdated}
             </p>
           )}
         </div>

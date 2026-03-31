@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { format } from 'date-fns'
-import { ru } from 'date-fns/locale'
+import { ru, enUS } from 'date-fns/locale'
 import { Plus, Sparkles } from 'lucide-react'
 import MealCard from '@/components/chrono/MealCard'
 import EatingWindowBar from '@/components/chrono/EatingWindowBar'
@@ -10,10 +10,11 @@ import MealLogger from '@/components/meals/MealLogger'
 import MacroRing from '@/components/meals/MacroRing'
 import { computeChronoScore } from '@/lib/chrono'
 import type { Chronotype, MealType } from '@/lib/chrono'
-import { useAppStore, type MealEntry } from '@/store/useAppStore'
+import { useAppStore, t, type MealEntry } from '@/store/useAppStore'
 
 export default function DashboardPage() {
-  const { todayMeals, setTodayMeals, addMeal, removeMeal, updateMeal, aiAdvice, setAiAdvice, setAiLoading } = useAppStore()
+  const { todayMeals, setTodayMeals, addMeal, removeMeal, updateMeal, aiAdvice, setAiAdvice, setAiLoading, lang } = useAppStore()
+  const tr = t[lang]
   const [showLogger, setShowLogger]   = useState(false)
   const [editingMeal, setEditingMeal] = useState<import('@/store/useAppStore').MealEntry | null>(null)
   const [currentHour, setCurrentHour] = useState(new Date().getHours() + new Date().getMinutes() / 60)
@@ -112,9 +113,9 @@ export default function DashboardPage() {
       {/* Header */}
       <div>
         <p className="text-xs text-neutral-500 uppercase tracking-wide">
-          {format(new Date(), 'EEEE, d MMMM', { locale: ru })}
+          {format(new Date(), 'EEEE, d MMMM', { locale: lang === 'ru' ? ru : enUS })}
         </p>
-        <h1 className="text-2xl font-bold text-neutral-100">Сегодня</h1>
+        <h1 className="text-2xl font-bold text-neutral-100">{tr.dash.today}</h1>
       </div>
 
       {/* AI advice — top priority, shown first if available */}
@@ -122,7 +123,7 @@ export default function DashboardPage() {
         <div className="rounded-xl bg-neutral-900 border border-[#1D9E75]/30 p-4">
           <div className="flex items-center gap-2 mb-2">
             <Sparkles size={14} className="text-[#1D9E75]" />
-            <h2 className="text-sm font-semibold text-[#1D9E75]">AI-совет на сегодня</h2>
+            <h2 className="text-sm font-semibold text-[#1D9E75]">{tr.dash.aiAdvice}</h2>
           </div>
           <p className="text-sm text-neutral-300 whitespace-pre-line">{aiAdvice}</p>
         </div>
@@ -131,12 +132,12 @@ export default function DashboardPage() {
       {/* Macro rings + chrono stat */}
       <div className="rounded-xl bg-neutral-900 border border-neutral-800 p-4">
         <div className="flex items-center justify-around">
-          <MacroRing consumed={totalCalories} goal={calorieGoal} label="ккал" />
-          <MacroRing consumed={Math.round(totalProtein)} goal={proteinGoal} label="белок г" />
+          <MacroRing consumed={totalCalories} goal={calorieGoal} label={tr.dash.kcal} />
+          <MacroRing consumed={Math.round(totalProtein)} goal={proteinGoal} label={tr.dash.protein} />
           <div className="flex flex-col items-center gap-1">
-            <p className="text-xs text-neutral-500 uppercase tracking-wide">Хроно-балл</p>
+            <p className="text-xs text-neutral-500 uppercase tracking-wide">{tr.dash.chronoScore}</p>
             <p className="text-4xl font-bold" style={{ color: scoreColor }}>{avgChronoScore}</p>
-            <p className="text-xs text-neutral-500">из 100</p>
+            <p className="text-xs text-neutral-500">{tr.dash.outOf} 100</p>
           </div>
         </div>
       </div>
@@ -147,12 +148,12 @@ export default function DashboardPage() {
         className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#1D9E75] py-3.5 text-sm font-semibold text-white hover:bg-[#178a64] transition-colors"
       >
         <Plus size={18} />
-        Добавить приём пищи
+        {tr.dash.addMeal}
       </button>
 
       {/* Eating window */}
       <div className="rounded-xl bg-neutral-900 border border-neutral-800 p-4">
-        <h2 className="text-sm font-semibold text-neutral-300 mb-3">Окно питания</h2>
+        <h2 className="text-sm font-semibold text-neutral-300 mb-3">{tr.dash.eatingWindow}</h2>
         <EatingWindowBar
           chronotype={chronotype}
           firstMealHour={firstMeal}
@@ -163,12 +164,12 @@ export default function DashboardPage() {
 
       {/* Meals list */}
       <div className="space-y-2">
-        <h2 className="text-sm font-semibold text-neutral-300">Приёмы пищи</h2>
+        <h2 className="text-sm font-semibold text-neutral-300">{tr.dash.meals}</h2>
         {todayMeals.length === 0 ? (
           <div className="rounded-xl border border-dashed border-neutral-800 p-8 text-center">
-            <p className="text-neutral-500 text-sm">Нет приёмов пищи</p>
+            <p className="text-neutral-500 text-sm">{tr.dash.noMeals}</p>
             <p className="text-xs text-neutral-600 mt-1">
-              Сейчас {currentZone.label.toLowerCase()}. {currentZone.tip}
+              {currentZone.label.toLowerCase()}. {currentZone.tip}
             </p>
           </div>
         ) : (
@@ -185,7 +186,7 @@ export default function DashboardPage() {
 
       {/* Hormone curves — detailed analysis, below the fold */}
       <div className="rounded-xl bg-neutral-900 border border-neutral-800 p-4">
-        <h2 className="text-sm font-semibold text-neutral-300 mb-3">Гормональные кривые дня</h2>
+        <h2 className="text-sm font-semibold text-neutral-300 mb-3">{tr.dash.hormoneCurves}</h2>
         <DayTimeline chronotype={chronotype} currentHour={currentHour} meals={todayMeals} />
       </div>
 

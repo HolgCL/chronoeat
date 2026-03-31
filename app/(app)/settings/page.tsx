@@ -1,20 +1,12 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import { MCTQ_QUESTIONS, determineChronotype } from '@/lib/chronotype'
 import { getEatingWindow, getSleepSchedule } from '@/lib/chrono'
 import type { Chronotype } from '@/lib/chrono'
+import { useAppStore, t } from '@/store/useAppStore'
 
 const CALORIE_GOALS = [1500, 1800, 2000, 2200, 2500, 3000]
-
-const CHRONOTYPE_LABELS: Record<Chronotype, string> = {
-  extreme_morning: 'Выраженный жаворонок',
-  morning:         'Жаворонок',
-  intermediate:    'Промежуточный',
-  evening:         'Сова',
-  extreme_evening: 'Выраженная сова',
-}
 
 function formatHour(h: number) {
   const hh = Math.floor(h)
@@ -23,7 +15,10 @@ function formatHour(h: number) {
 }
 
 export default function SettingsPage() {
-  const router = useRouter()
+  const { lang, setLang } = useAppStore()
+  const tr = t[lang]
+  const CHRONOTYPE_LABELS: Record<Chronotype, string> = tr.chronotypes
+
   const [chronotype, setChronotype] = useState<Chronotype>('intermediate')
   const [calorieGoal, setCalorieGoal] = useState(2000)
   const [proteinGoal, setProteinGoal] = useState(150)
@@ -72,31 +67,51 @@ export default function SettingsPage() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
       <div>
-        <p className="text-xs text-neutral-500 uppercase tracking-wide">Профиль</p>
-        <h1 className="text-2xl font-bold text-neutral-100">Настройки</h1>
+        <p className="text-xs text-neutral-500 uppercase tracking-wide">{tr.settings.profile}</p>
+        <h1 className="text-2xl font-bold text-neutral-100">{tr.settings.title}</h1>
+      </div>
+
+      {/* Language */}
+      <div className="rounded-xl bg-neutral-900 border border-neutral-800 p-4 space-y-3">
+        <h2 className="text-sm font-semibold text-neutral-300">{tr.settings.language}</h2>
+        <div className="flex gap-2">
+          {(['ru', 'en'] as const).map(l => (
+            <button
+              key={l}
+              onClick={() => setLang(l)}
+              className={`rounded-full px-4 py-1.5 text-sm border transition-colors ${
+                lang === l
+                  ? 'border-[#1D9E75] bg-[#1D9E75]/20 text-[#1D9E75]'
+                  : 'border-neutral-700 text-neutral-400 hover:border-neutral-500'
+              }`}
+            >
+              {l === 'ru' ? '🇷🇺 Русский' : '🇬🇧 English'}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Chronotype */}
       <div className="rounded-xl bg-neutral-900 border border-neutral-800 p-4 space-y-3">
-        <h2 className="text-sm font-semibold text-neutral-300">Хронотип</h2>
+        <h2 className="text-sm font-semibold text-neutral-300">{tr.settings.chronotype}</h2>
         <div className="flex items-center justify-between">
           <div>
             <p className="text-base font-semibold text-neutral-100">{CHRONOTYPE_LABELS[chronotype]}</p>
             <p className="text-xs text-neutral-500 mt-0.5">
-              Окно питания: {formatHour(window_.start)} – {formatHour(window_.end)}
+              {tr.settings.eatingWindowLabel}: {formatHour(window_.start)} – {formatHour(window_.end)}
             </p>
           </div>
           <button
             onClick={() => setShowMctq(v => !v)}
             className="text-xs text-[#1D9E75] hover:underline"
           >
-            {showMctq ? 'Свернуть' : 'Пересдать тест'}
+            {showMctq ? tr.settings.collapse : tr.settings.retakeTest}
           </button>
         </div>
 
         {showMctq && (
           <div className="space-y-4 pt-2 border-t border-neutral-800">
-            <p className="text-xs text-neutral-500">Отвечайте исходя из свободных дней без будильника</p>
+            <p className="text-xs text-neutral-500">{tr.settings.freedays}</p>
             {MCTQ_QUESTIONS.map((q, i) => (
               <div key={i} className="space-y-2">
                 <p className="text-sm text-neutral-300">{q.text}</p>
@@ -121,7 +136,7 @@ export default function SettingsPage() {
               onClick={handleMctqFinish}
               className="w-full rounded-lg bg-[#1D9E75] px-4 py-2 text-sm font-semibold text-white hover:bg-[#178a64] transition-colors"
             >
-              Применить
+              {tr.settings.applyTest}
             </button>
           </div>
         )}
@@ -129,7 +144,7 @@ export default function SettingsPage() {
         {/* Manual chronotype select */}
         {!showMctq && (
           <div>
-            <p className="text-xs text-neutral-500 mb-2">Или выберите вручную:</p>
+            <p className="text-xs text-neutral-500 mb-2">{tr.settings.manualSelect}</p>
             <div className="flex flex-wrap gap-2">
               {(Object.entries(CHRONOTYPE_LABELS) as [Chronotype, string][]).map(([key, label]) => (
                 <button
@@ -151,7 +166,7 @@ export default function SettingsPage() {
 
       {/* Calorie goal */}
       <div className="rounded-xl bg-neutral-900 border border-neutral-800 p-4 space-y-3">
-        <h2 className="text-sm font-semibold text-neutral-300">Цель по калориям</h2>
+        <h2 className="text-sm font-semibold text-neutral-300">{tr.settings.calorieGoal}</h2>
         <div className="flex flex-wrap gap-2">
           {CALORIE_GOALS.map(g => (
             <button
@@ -163,54 +178,54 @@ export default function SettingsPage() {
                   : 'border-neutral-700 text-neutral-400 hover:border-neutral-500'
               }`}
             >
-              {g} ккал
+              {g} {tr.settings.kcalDay.replace('/день', '').replace('/day', '')}
             </button>
           ))}
         </div>
         <div className="flex items-center gap-2">
-          <label className="text-xs text-neutral-500">Свое значение:</label>
+          <label className="text-xs text-neutral-500">{tr.settings.customValue}</label>
           <input
             type="text" inputMode="numeric" value={calorieGoal}
             onChange={e => { const n = parseInt(e.target.value.replace(/\D/g,''),10); if (!isNaN(n)) setCalorieGoal(n) }}
             onFocus={e => e.target.select()}
             className="w-24 rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-1.5 text-sm text-neutral-100 outline-none"
           />
-          <span className="text-xs text-neutral-500">ккал/день</span>
+          <span className="text-xs text-neutral-500">{tr.settings.kcalDay}</span>
         </div>
       </div>
 
       {/* Protein goal */}
       <div className="rounded-xl bg-neutral-900 border border-neutral-800 p-4 space-y-3">
-        <h2 className="text-sm font-semibold text-neutral-300">Цель по белку</h2>
+        <h2 className="text-sm font-semibold text-neutral-300">{tr.settings.proteinGoal}</h2>
         <div className="flex items-center gap-2">
-          <label className="text-xs text-neutral-500">Граммов в день:</label>
+          <label className="text-xs text-neutral-500">{tr.settings.gramsPerDay}</label>
           <input
             type="text" inputMode="numeric" value={proteinGoal}
             onChange={e => { const n = parseInt(e.target.value.replace(/\D/g,''),10); if (!isNaN(n)) setProteinGoal(n) }}
             onFocus={e => e.target.select()}
             className="w-24 rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-1.5 text-sm text-neutral-100 outline-none"
           />
-          <span className="text-xs text-neutral-500">г/день</span>
+          <span className="text-xs text-neutral-500">{tr.settings.gramsDay}</span>
         </div>
       </div>
 
       {/* Sleep schedule — derived from chronotype */}
       <div className="rounded-xl bg-neutral-900 border border-neutral-800 p-4 space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-neutral-300">Режим сна</h2>
-          <span className="text-xs text-neutral-500">рассчитывается по хронотипу</span>
+          <h2 className="text-sm font-semibold text-neutral-300">{tr.settings.sleepSchedule}</h2>
+          <span className="text-xs text-neutral-500">{tr.settings.sleepByChronotype}</span>
         </div>
         <div className="flex gap-3">
           <div className="flex-1 rounded-lg bg-neutral-800 p-3 text-center">
-            <p className="text-[10px] text-neutral-500 uppercase tracking-wide">Подъём</p>
+            <p className="text-[10px] text-neutral-500 uppercase tracking-wide">{tr.settings.wakeUp}</p>
             <p className="text-lg font-bold text-neutral-100 mt-0.5">{formatHour(sleep_.wakeUp)}</p>
           </div>
           <div className="flex-1 rounded-lg bg-neutral-800 p-3 text-center">
-            <p className="text-[10px] text-neutral-500 uppercase tracking-wide">Отход ко сну</p>
+            <p className="text-[10px] text-neutral-500 uppercase tracking-wide">{tr.settings.bedtime}</p>
             <p className="text-lg font-bold text-neutral-100 mt-0.5">{formatHour(sleep_.bedtime)}</p>
           </div>
         </div>
-        <p className="text-xs text-neutral-600">Смените хронотип, чтобы изменить режим сна</p>
+        <p className="text-xs text-neutral-600">{tr.settings.changeChrono}</p>
       </div>
 
       {/* Save */}
@@ -218,23 +233,23 @@ export default function SettingsPage() {
         onClick={handleSave}
         className={`w-full rounded-xl py-3 text-sm font-semibold text-white transition-colors ${saveError ? 'bg-red-600 hover:bg-red-700' : 'bg-[#1D9E75] hover:bg-[#178a64]'}`}
       >
-        {saved ? '✓ Сохранено' : saveError ? 'Ошибка сохранения' : 'Сохранить настройки'}
+        {saved ? tr.settings.saved : saveError ? tr.settings.saveError : tr.settings.save}
       </button>
 
       {/* Sign out */}
       <div className="rounded-xl bg-neutral-900 border border-neutral-800 p-4">
-        <h2 className="text-sm font-semibold text-neutral-300 mb-3">Аккаунт</h2>
+        <h2 className="text-sm font-semibold text-neutral-300 mb-3">{tr.settings.account}</h2>
         <button
           onClick={() => signOut({ callbackUrl: '/login' })}
           className="text-sm text-red-400 hover:text-red-300 transition-colors"
         >
-          Выйти из аккаунта
+          {tr.settings.signOut}
         </button>
       </div>
 
       {/* About */}
       <div className="text-center text-xs text-neutral-600 pb-4">
-        ChronoEat v1.0 — питание по циркадным ритмам
+        ChronoEat v1.0
       </div>
     </div>
   )

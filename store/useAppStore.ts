@@ -1,5 +1,6 @@
 'use client'
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 import type { Lang } from '@/lib/translations'
 import t from '@/lib/translations'
 
@@ -22,6 +23,7 @@ interface AppStore {
   aiAdvice:         string
   aiLoading:        boolean
   currentHour:      number
+  lang:             Lang
 
   setTodayMeals:    (meals: MealEntry[]) => void
   addMeal:          (meal: MealEntry) => void
@@ -30,19 +32,29 @@ interface AppStore {
   setAiAdvice:      (text: string) => void
   setAiLoading:     (v: boolean) => void
   setCurrentHour:   (h: number) => void
+  setLang:          (lang: Lang) => void
 }
 
-export const useAppStore = create<AppStore>((set) => ({
-  todayMeals:   [],
-  aiAdvice:     '',
-  aiLoading:    false,
-  currentHour:  new Date().getHours() + new Date().getMinutes() / 60,
+export const useAppStore = create<AppStore>()(
+  persist(
+    (set) => ({
+      todayMeals:   [],
+      aiAdvice:     '',
+      aiLoading:    false,
+      currentHour:  new Date().getHours() + new Date().getMinutes() / 60,
+      lang:         'ru',
 
-  setTodayMeals:  (meals) => set({ todayMeals: meals }),
-  addMeal:        (meal)  => set((s) => ({ todayMeals: [...s.todayMeals, meal] })),
-  removeMeal:     (id)    => set((s) => ({ todayMeals: s.todayMeals.filter(m => m.id !== id) })),
-  updateMeal:     (meal)  => set((s) => ({ todayMeals: s.todayMeals.map(m => m.id === meal.id ? meal : m) })),
-  setAiAdvice:    (text)  => set({ aiAdvice: text }),
-  setAiLoading:   (v)     => set({ aiLoading: v }),
-  setCurrentHour: (h)     => set({ currentHour: h }),
-}))
+      setTodayMeals:  (meals) => set({ todayMeals: meals }),
+      addMeal:        (meal)  => set((s) => ({ todayMeals: [...s.todayMeals, meal] })),
+      removeMeal:     (id)    => set((s) => ({ todayMeals: s.todayMeals.filter(m => m.id !== id) })),
+      updateMeal:     (meal)  => set((s) => ({ todayMeals: s.todayMeals.map(m => m.id === meal.id ? meal : m) })),
+      setAiAdvice:    (text)  => set({ aiAdvice: text }),
+      setAiLoading:   (v)     => set({ aiLoading: v }),
+      setCurrentHour: (h)     => set({ currentHour: h }),
+      setLang:        (lang)  => set({ lang }),
+    }),
+    { name: 'chronoeat-prefs', partialize: (s) => ({ lang: s.lang }) }
+  )
+)
+
+export { t }
