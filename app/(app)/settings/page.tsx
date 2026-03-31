@@ -5,6 +5,7 @@ import { MCTQ_QUESTIONS, determineChronotype } from '@/lib/chronotype'
 import { getEatingWindow, getSleepSchedule } from '@/lib/chrono'
 import type { Chronotype } from '@/lib/chrono'
 import { useAppStore, t } from '@/store/useAppStore'
+import NumInput from '@/components/NumInput'
 
 const CALORIE_GOALS = [1500, 1800, 2000, 2200, 2500, 3000]
 
@@ -184,10 +185,9 @@ export default function SettingsPage() {
         </div>
         <div className="flex items-center gap-2">
           <label className="text-xs text-neutral-500">{tr.settings.customValue}</label>
-          <input
-            type="text" inputMode="numeric" value={calorieGoal}
-            onChange={e => { const n = parseInt(e.target.value.replace(/\D/g,''),10); if (!isNaN(n)) setCalorieGoal(n) }}
-            onFocus={e => e.target.select()}
+          <NumInput
+            value={calorieGoal}
+            onChange={setCalorieGoal}
             className="w-24 rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-1.5 text-sm text-neutral-100 outline-none"
           />
           <span className="text-xs text-neutral-500">{tr.settings.kcalDay}</span>
@@ -199,10 +199,9 @@ export default function SettingsPage() {
         <h2 className="text-sm font-semibold text-neutral-300">{tr.settings.proteinGoal}</h2>
         <div className="flex items-center gap-2">
           <label className="text-xs text-neutral-500">{tr.settings.gramsPerDay}</label>
-          <input
-            type="text" inputMode="numeric" value={proteinGoal}
-            onChange={e => { const n = parseInt(e.target.value.replace(/\D/g,''),10); if (!isNaN(n)) setProteinGoal(n) }}
-            onFocus={e => e.target.select()}
+          <NumInput
+            value={proteinGoal}
+            onChange={setProteinGoal}
             className="w-24 rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-1.5 text-sm text-neutral-100 outline-none"
           />
           <span className="text-xs text-neutral-500">{tr.settings.gramsDay}</span>

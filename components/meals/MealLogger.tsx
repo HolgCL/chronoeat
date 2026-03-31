@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { format } from 'date-fns'
 import { X } from 'lucide-react'
 import FoodSearch from './FoodSearch'
+import NumInput from '@/components/NumInput'
 import type { FoodPortion } from '@/lib/food-search'
 import type { MealType } from '@/lib/chrono'
 import { useAppStore, t, type MealEntry } from '@/store/useAppStore'
@@ -27,9 +28,6 @@ export default function MealLogger({ onSave, onClose, inline, initialMeal }: Pro
     { value: 'snack',     label: tr.mealTypes.snack },
     { value: 'dinner',    label: tr.mealTypes.dinner },
   ]
-
-  // Parse numeric input: strips leading zeros, falls back to 0 if empty
-  const parseNum = (v: string) => { const n = parseInt(v.replace(/\D/g, ''), 10); return isNaN(n) ? 0 : n }
 
   const [food, setFood]         = useState<FoodPortion | null>(null)
   const [grams, setGrams]       = useState(100)
@@ -119,10 +117,9 @@ export default function MealLogger({ onSave, onClose, inline, initialMeal }: Pro
             ].map(({ label, value, set }) => (
               <div key={label} className="flex items-center gap-3">
                 <label className="text-sm text-neutral-400 w-20 shrink-0">{label}</label>
-                <input
-                  type="text" inputMode="numeric" value={value}
-                  onChange={e => set(parseNum(e.target.value))}
-                  onFocus={e => e.target.select()}
+                <NumInput
+                  value={value}
+                  onChange={set}
                   className="w-24 rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm text-neutral-100 outline-none"
                 />
               </div>
@@ -139,10 +136,9 @@ export default function MealLogger({ onSave, onClose, inline, initialMeal }: Pro
             <FoodSearch onSelect={setFood} grams={grams} />
             <div className="flex items-center gap-3">
               <label className="text-sm text-neutral-400 w-20">{tr.logger.portion}</label>
-              <input
-                type="text" inputMode="numeric" value={grams}
-                onChange={e => setGrams(parseNum(e.target.value))}
-                onFocus={e => e.target.select()}
+              <NumInput
+                value={grams}
+                onChange={setGrams}
                 className="w-24 rounded-lg border border-neutral-700 bg-neutral-800 px-3 py-2 text-sm text-neutral-100 outline-none"
               />
               {adjustedFood && (

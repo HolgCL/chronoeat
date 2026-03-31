@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { CheckCircle, Pencil, X } from 'lucide-react'
 import { useAppStore, t } from '@/store/useAppStore'
+import NumInput from '@/components/NumInput'
 
 type Gender = 'male' | 'female'
 type Goal = 'lose' | 'maintain' | 'gain'
@@ -114,12 +115,6 @@ export default function CalculatorPage() {
     setTimeout(() => setSaved(false), 2500)
   }
 
-  const parseNum = (v: string, float?: boolean) => {
-    const clean = v.replace(/[^\d.]/g, '')
-    const n = float ? parseFloat(clean) : parseInt(clean, 10)
-    return isNaN(n) ? 0 : n
-  }
-
   const inputCls = 'w-full rounded-xl border border-neutral-700 bg-neutral-800 px-4 py-2.5 text-sm text-neutral-100 outline-none focus:border-[#1D9E75] transition-colors'
 
   const kgLabel  = lang === 'ru' ? 'кг' : 'kg'
@@ -157,21 +152,15 @@ export default function CalculatorPage() {
         <div className="grid grid-cols-3 gap-3">
           <div className="space-y-1.5">
             <label className="text-xs text-neutral-500">{tr.calc.age}</label>
-            <input type="text" inputMode="numeric" value={age}
-              onChange={e => setAge(parseNum(e.target.value))}
-              onFocus={e => e.target.select()} className={inputCls} />
+            <NumInput value={age} onChange={setAge} className={inputCls} />
           </div>
           <div className="space-y-1.5">
             <label className="text-xs text-neutral-500">{tr.calc.weight}</label>
-            <input type="text" inputMode="decimal" value={weight}
-              onChange={e => setWeight(parseNum(e.target.value, true))}
-              onFocus={e => e.target.select()} className={inputCls} />
+            <NumInput value={weight} onChange={setWeight} float className={inputCls} />
           </div>
           <div className="space-y-1.5">
             <label className="text-xs text-neutral-500">{tr.calc.height}</label>
-            <input type="text" inputMode="numeric" value={height}
-              onChange={e => setHeight(parseNum(e.target.value))}
-              onFocus={e => e.target.select()} className={inputCls} />
+            <NumInput value={height} onChange={setHeight} className={inputCls} />
           </div>
         </div>
       </div>
@@ -264,26 +253,19 @@ export default function CalculatorPage() {
                     </p>
                     <div className="flex items-center gap-3 flex-wrap">
                       <div className="flex items-center gap-2">
-                        <input
-                          type="text" inputMode="decimal" value={tgt.kg}
-                          onChange={e => {
-                            const n = parseFloat(e.target.value.replace(/[^\d.]/g,''))
-                            if (!isNaN(n)) setTargets(prev => ({ ...prev, [g]: { ...prev[g as 'lose'|'gain'], kg: n } }))
-                          }}
-                          onFocus={e => e.target.select()}
+                        <NumInput
+                          value={tgt.kg}
+                          onChange={n => setTargets(prev => ({ ...prev, [g]: { ...prev[g as 'lose'|'gain'], kg: n } }))}
+                          float
                           className="w-16 rounded-lg border border-neutral-700 bg-neutral-800 px-2 py-1.5 text-sm text-neutral-100 outline-none focus:border-[#1D9E75] text-center"
                         />
                         <span className="text-xs text-neutral-400">{kgLabel}</span>
                       </div>
                       <span className="text-xs text-neutral-500">{lang === 'ru' ? 'за' : 'in'}</span>
                       <div className="flex items-center gap-2">
-                        <input
-                          type="text" inputMode="numeric" value={tgt.weeks}
-                          onChange={e => {
-                            const n = parseInt(e.target.value.replace(/\D/g,''), 10)
-                            if (!isNaN(n) && n > 0) setTargets(prev => ({ ...prev, [g]: { ...prev[g as 'lose'|'gain'], weeks: n } }))
-                          }}
-                          onFocus={e => e.target.select()}
+                        <NumInput
+                          value={tgt.weeks}
+                          onChange={n => { if (n > 0) setTargets(prev => ({ ...prev, [g]: { ...prev[g as 'lose'|'gain'], weeks: n } })) }}
                           className="w-16 rounded-lg border border-neutral-700 bg-neutral-800 px-2 py-1.5 text-sm text-neutral-100 outline-none focus:border-[#1D9E75] text-center"
                         />
                         <span className="text-xs text-neutral-400">{wksLabel}</span>
