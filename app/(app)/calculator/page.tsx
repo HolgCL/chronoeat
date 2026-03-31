@@ -3,6 +3,13 @@ import { useState, useEffect, useCallback } from 'react'
 import { CheckCircle } from 'lucide-react'
 
 type Gender = 'male' | 'female'
+type Goal = 'lose' | 'maintain' | 'gain'
+
+const GOALS: { value: Goal; label: string; desc: string; calorieAdj: number; proteinMult: number }[] = [
+  { value: 'lose',     label: '🔥 Похудеть',        desc: 'Дефицит −20%, высокий белок',     calorieAdj: -0.20, proteinMult: 2.2 },
+  { value: 'maintain', label: '⚖️ Поддерживать вес', desc: 'Поддержание, баланс макросов',    calorieAdj:  0,    proteinMult: 2.0 },
+  { value: 'gain',     label: '💪 Набрать мышцы',   desc: 'Профицит +15%, акцент на белок',  calorieAdj: +0.15, proteinMult: 2.4 },
+]
 
 const STEPS_LEVELS = [
   { label: 'Малоподвижный',    range: '< 3 000',      min: 0,     max: 2999,  multiplier: 1.2   },
@@ -22,16 +29,18 @@ function calcBMR(gender: Gender, weight: number, height: number, age: number) {
   return gender === 'male' ? base + 5 : base - 161
 }
 
-interface Macros { calories: number; protein: number; fat: number; carbs: number }
+interface Macros { tdee: number; calories: number; protein: number; fat: number; carbs: number }
 
-function calcMacros(gender: Gender, weight: number, height: number, age: number, steps: number): Macros {
-  const bmr = calcBMR(gender, weight, height, age)
+function calcMacros(gender: Gender, weight: number, height: number, age: number, steps: number, goal: Goal): Macros {
+  const bmr      = calcBMR(gender, weight, height, age)
   const activity = getActivityLevel(steps)
-  const calories = Math.round(bmr * activity.multiplier)
-  const protein  = Math.round(weight * 2.0)           // 2 г/кг
-  const fat      = Math.round((calories * 0.28) / 9)  // 28% калорий
-  const carbs    = Math.round((calories - protein * 4 - fat * 9) / 4)
-  return { calories, protein, fat, carbs }
+  const tdee     = Math.round(bmr * activity.multiplier)
+  const goalDef  = GOALS.find(g => g.value === goal)!
+  const calories = Math.round(tdee * (1 + goalDef.calorieAdj))
+  const protein  = Math.round(weight * goalDef.proteinMult)
+  const fat      = Math.round((calories * 0.28) / 9)
+  const carbs    = Math.max(0, Math.round((calories - protein * 4 - fat * 9) / 4))
+  return { tdee, calories, protein, fat, carbs }
 }
 
 export default function CalculatorPage() {
@@ -40,6 +49,7 @@ export default function CalculatorPage() {
   const [weight, setWeight]     = useState(75)
   const [height, setHeight]     = useState(175)
   const [steps, setSteps]       = useState(7000)
+  const [goal, setGoal]         = useState<Goal>('maintain')
   const [saved, setSaved]       = useState(false)
   const [loading, setLoading]   = useState(false)
 
@@ -55,7 +65,7 @@ export default function CalculatorPage() {
   }, [])
 
   const valid  = age > 0 && weight > 0 && height > 0
-  const macros = valid ? calcMacros(gender, weight, height, age, steps) : null
+  const macros = valid ? calcMacros(gender, weight, height, age, steps, goal) : null
   const activity = getActivityLevel(steps)
 
   async function handleSave() {
@@ -174,10 +184,41 @@ export default function CalculatorPage() {
         </div>
       </div>
 
+      {/* Goal */}
+      <div className="rounded-xl bg-neutral-900 border border-neutral-800 p-4 space-y-3">
+        <h2 className="text-sm font-semibold text-neutral-300">Цель</h2>
+        <div className="grid grid-cols-1 gap-2">
+          {GOALS.map(g => (
+            <button
+              key={g.value}
+              onClick={() => setGoal(g.value)}
+              className={`flex items-center justify-between rounded-xl px-4 py-3 border text-left transition-colors ${
+                goal === g.value
+                  ? 'border-[#1D9E75] bg-[#1D9E75]/10'
+                  : 'border-neutral-700 hover:border-neutral-500'
+              }`}
+            >
+              <span className={`text-sm font-medium ${goal === g.value ? 'text-[#1D9E75]' : 'text-neutral-200'}`}>
+                {g.label}
+              </span>
+              <span className="text-xs text-neutral-500">{g.desc}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Results */}
       {macros && (
         <div className="rounded-xl bg-neutral-900 border border-neutral-800 p-4 space-y-4">
-          <h2 className="text-sm font-semibold text-neutral-300">Рекомендуемое КБЖУ на день</h2>
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-sm font-semibold text-neutral-300">Рекомендуемое КБЖУ на день</h2>
+            {goal !== 'maintain' && (
+              <span className="text-xs text-neutral-500">
+                TDEE: {macros.tdee} ккал
+                {goal === 'lose' ? ' → −20%' : ' → +15%'}
+              </span>
+            )}
+          </div>
 
           <div className="grid grid-cols-4 gap-2">
             {[
@@ -209,9 +250,11 @@ export default function CalculatorPage() {
           </div>
 
           <div className="rounded-lg bg-neutral-800 p-3 text-xs text-neutral-400 space-y-1">
-            <p>• Белок: 2 г на кг массы тела — поддержание мышц</p>
+            {goal === 'lose'     && <p>• Дефицит 20% от TDEE — безопасное похудение ~0.5–1 кг/нед</p>}
+            {goal === 'gain'     && <p>• Профицит 15% от TDEE — рост мышц с минимальным жиром</p>}
+            {goal === 'maintain' && <p>• Калории равны расходу — поддержание текущего веса</p>}
+            <p>• Белок: {GOALS.find(g => g.value === goal)!.proteinMult} г/кг — {goal === 'lose' ? 'защита мышц при дефиците' : goal === 'gain' ? 'строительный материал для мышц' : 'поддержание мышечной массы'}</p>
             <p>• Жиры: 28% от калорий — гормональный баланс</p>
-            <p>• Углеводы: остаток калорий — топливо для дня</p>
           </div>
 
           <button
