@@ -1,4 +1,5 @@
 'use client'
+import { useAppStore } from '@/store/useAppStore'
 
 interface Props {
   consumed: number
@@ -7,6 +8,7 @@ interface Props {
 }
 
 export default function MacroRing({ consumed, goal, label = 'ккал' }: Props) {
+  const { lang } = useAppStore()
   const pct = Math.min(consumed / goal, 1)
   const size = 120
   const strokeWidth = 10
@@ -36,7 +38,7 @@ export default function MacroRing({ consumed, goal, label = 'ккал' }: Props)
       <div className="absolute flex flex-col items-center">
         <span className="text-xl font-bold text-neutral-100">{consumed}</span>
         <span className="text-xs text-neutral-400">{label}</span>
-        <span className="text-xs text-neutral-500">из {goal}</span>
+        <span className="text-xs text-neutral-500">{lang === 'ru' ? 'из' : 'of'} {goal}</span>
       </div>
     </div>
   )
