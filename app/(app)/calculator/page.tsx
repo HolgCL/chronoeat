@@ -54,7 +54,7 @@ export default function CalculatorPage() {
     })
   }, [])
 
-  const valid = age > 0 && weight > 0 && height > 0 && steps >= 0
+  const valid  = age > 0 && weight > 0 && height > 0
   const macros = valid ? calcMacros(gender, weight, height, age, steps) : null
   const activity = getActivityLevel(steps)
 
@@ -110,17 +110,20 @@ export default function CalculatorPage() {
           <div className="space-y-1.5">
             <label className="text-xs text-neutral-500">Возраст (лет)</label>
             <input type="number" min={10} max={100} value={age}
-              onChange={e => setAge(Number(e.target.value))} className={inputCls} />
+              onChange={e => setAge(Number(e.target.value))}
+              onFocus={e => e.target.select()} className={inputCls} />
           </div>
           <div className="space-y-1.5">
             <label className="text-xs text-neutral-500">Вес (кг)</label>
             <input type="number" min={30} max={300} step={0.5} value={weight}
-              onChange={e => setWeight(Number(e.target.value))} className={inputCls} />
+              onChange={e => setWeight(Number(e.target.value))}
+              onFocus={e => e.target.select()} className={inputCls} />
           </div>
           <div className="space-y-1.5">
             <label className="text-xs text-neutral-500">Рост (см)</label>
             <input type="number" min={100} max={250} value={height}
-              onChange={e => setHeight(Number(e.target.value))} className={inputCls} />
+              onChange={e => setHeight(Number(e.target.value))}
+              onFocus={e => e.target.select()} className={inputCls} />
           </div>
         </div>
       </div>
